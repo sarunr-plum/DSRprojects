@@ -2,11 +2,12 @@ import { useState, useEffect, useCallback } from "react"
 import { handleCallback, isAuthenticated, logout } from "./lib/auth"
 import { getEpics, type JiraEpic } from "./lib/jira"
 import { initDefaultVisibility } from "./lib/storage"
+import { cheer } from "./lib/mood"
 import LoginPage from "./pages/LoginPage"
 import BoardPage from "./pages/BoardPage"
 import EpicsPage from "./pages/EpicsPage"
 import AppHeader from "./components/AppHeader"
-import DotGrid from "./components/DotGrid"
+import GridPaper from "./components/GridPaper"
 
 type Page = "loading" | "login" | "app"
 type MainTab = "tasks" | "projects"
@@ -28,6 +29,7 @@ export default function App() {
     initDefaultVisibility(fetchedEpics)
     setEpics(fetchedEpics)
     setPage("app")
+    window.setTimeout(() => cheer("wave"), 400)
   }
 
   useEffect(() => {
@@ -66,11 +68,11 @@ export default function App() {
     return (
       <div
         className="min-h-screen flex items-center justify-center"
-        style={{ background: "#FAF6F0" }}
+        style={{ background: "var(--bg)" }}
       >
         <div
           className="w-10 h-10 rounded-2xl animate-pulse"
-          style={{ background: "#571541", opacity: 0.3 }}
+          style={{ background: "var(--accent)", opacity: 0.3 }}
         />
       </div>
     )
@@ -92,9 +94,9 @@ export default function App() {
   return (
     <div
       className="flex flex-col min-h-screen"
-      style={{ background: "#FAF6F0" }}
+      style={{ background: "var(--bg)" }}
     >
-      <DotGrid />
+      <GridPaper />
       <AppHeader
         activeTab={activeTab}
         onTabChange={setActiveTab}

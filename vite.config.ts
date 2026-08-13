@@ -24,11 +24,12 @@ export default defineConfig(({ mode }) => {
         registerType: 'autoUpdate',
         devOptions: { enabled: false },
         manifest: {
-          name: 'DSR Board',
+          name: 'Design & Research',
           short_name: 'DSR',
           description: 'Design & Research team Jira board',
-          theme_color: '#4338CA',
-          background_color: '#F6F5F0',
+          // Keep in sync with --bg / --ink in src/index.css
+          theme_color: '#F8F4EA',
+          background_color: '#F8F4EA',
           display: 'standalone',
           orientation: 'portrait-primary',
           start_url: '/',

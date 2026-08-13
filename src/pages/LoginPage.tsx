@@ -1,7 +1,8 @@
 import { useState } from "react"
 import { initiateOAuth } from "../lib/auth"
 import { ATLASSIAN_CLIENT_ID } from "../lib/constants"
-import DotGrid from "../components/DotGrid"
+import GridPaper from "../components/GridPaper"
+import Logo from "../components/Logo"
 
 function DevTokenInjector({ onLoggedIn }: { onLoggedIn?: () => void }) {
   const [open, setOpen] = useState(false)
@@ -28,9 +29,9 @@ function DevTokenInjector({ onLoggedIn }: { onLoggedIn?: () => void }) {
 
   const inputStyle: React.CSSProperties = {
     fontFamily: "'DM Sans', sans-serif",
-    border: "1.5px solid #E3C4D3",
-    background: "white",
-    color: "#2B211D",
+    border: "1.5px solid var(--accent-line)",
+    background: "var(--surface)",
+    color: "var(--ink)",
     outline: "none",
     fontSize: "11px",
     padding: "6px 8px",
@@ -41,24 +42,27 @@ function DevTokenInjector({ onLoggedIn }: { onLoggedIn?: () => void }) {
   return (
     <div
       className="mt-6 rounded-2xl overflow-hidden"
-      style={{ border: "1.5px dashed #E3C4D3", background: "#F5E9EF" }}
+      style={{ border: "1.5px dashed var(--accent-line)", background: "var(--accent-wash)" }}
     >
       <button
         onClick={() => setOpen((o) => !o)}
         className="w-full flex items-center justify-between gap-2 p-4"
       >
-        <p className="text-xs font-semibold" style={{ color: "#571541" }}>
+        <p className="text-xs font-semibold" style={{ color: "var(--accent)" }}>
           Dev shortcut — paste tokens from live site
         </p>
         <svg
           viewBox="0 0 20 20"
           fill="none"
           className="w-4 h-4 flex-shrink-0 transition-transform"
-          style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
+          style={{
+            transform: open ? "rotate(180deg)" : "rotate(0deg)",
+            color: "var(--accent)",
+          }}
         >
           <path
             d="M5 7.5L10 12.5L15 7.5"
-            stroke="#571541"
+            stroke="currentColor"
             strokeWidth="1.75"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -68,7 +72,7 @@ function DevTokenInjector({ onLoggedIn }: { onLoggedIn?: () => void }) {
 
       {open && (
         <div className="px-4 pb-4 space-y-3">
-          <p className="text-xs" style={{ color: "#78716C" }}>
+          <p className="text-xs" style={{ color: "var(--ink-soft)" }}>
             roastroom.figma.site → DevTools → Application → Local Storage →{" "}
             <code className="font-mono-key">dsr_tokens</code> → copy each field
             separately.
@@ -77,7 +81,7 @@ function DevTokenInjector({ onLoggedIn }: { onLoggedIn?: () => void }) {
           <div className="space-y-1.5">
             <label
               className="text-xs font-medium block"
-              style={{ color: "#78716C" }}
+              style={{ color: "var(--ink-soft)" }}
             >
               access_token
             </label>
@@ -94,7 +98,7 @@ function DevTokenInjector({ onLoggedIn }: { onLoggedIn?: () => void }) {
           <div className="space-y-1.5">
             <label
               className="text-xs font-medium block"
-              style={{ color: "#78716C" }}
+              style={{ color: "var(--ink-soft)" }}
             >
               refresh_token
             </label>
@@ -109,7 +113,7 @@ function DevTokenInjector({ onLoggedIn }: { onLoggedIn?: () => void }) {
           </div>
 
           {error && (
-            <p className="text-xs" style={{ color: "#DC2626" }}>
+            <p className="text-xs" style={{ color: "var(--danger)" }}>
               {error}
             </p>
           )}
@@ -119,7 +123,7 @@ function DevTokenInjector({ onLoggedIn }: { onLoggedIn?: () => void }) {
             disabled={!accessToken.trim()}
             className="w-full py-2 rounded-full text-xs font-medium text-white"
             style={{
-              background: "#571541",
+              background: "var(--accent)",
               opacity: accessToken.trim() ? 1 : 0.4,
               cursor: accessToken.trim() ? "pointer" : "not-allowed",
             }}
@@ -154,68 +158,43 @@ export default function LoginPage({
   }
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center px-4">
-      <DotGrid />
+    <div className="relative min-h-screen flex items-center justify-center px-4 py-10">
+      <GridPaper />
 
-      <div className="relative z-10 w-full max-w-sm">
-        <div className="flex justify-center mb-8">
-          <div
-            className="w-14 h-14 rounded-2xl flex items-center justify-center"
-            style={{ background: "#571541" }}
-          >
-            <svg viewBox="0 0 40 40" fill="none" className="w-7 h-7">
-              <rect
-                x="4"
-                y="10"
-                width="7"
-                height="20"
-                rx="2"
-                fill="white"
-                opacity="0.9"
-              />
-              <rect
-                x="16.5"
-                y="6"
-                width="7"
-                height="24"
-                rx="2"
-                fill="white"
-                opacity="0.7"
-              />
-              <rect
-                x="29"
-                y="13"
-                width="7"
-                height="17"
-                rx="2"
-                fill="white"
-                opacity="0.5"
-              />
-            </svg>
-          </div>
+      <div className="relative z-10 w-full max-w-md rise-in">
+        <div className="flex justify-center mb-7">
+          <Logo size={92} />
         </div>
 
-        <div
-          className="bg-white rounded-2xl p-8 shadow-sm"
-          style={{ border: "1px solid #E5E3DC" }}
+        <h1
+          className="t-display text-center text-[clamp(2.25rem,7vw,3.25rem)] mb-3"
+          style={{ color: "var(--ink)" }}
         >
-          <h1
-            className="text-2xl font-semibold mb-1 text-center"
-            style={{ fontFamily: "'DM Sans', sans-serif", color: "#2B211D" }}
-          >
-            DSR Board
-          </h1>
-          <p className="text-center text-sm mb-8" style={{ color: "#78716C" }}>
-            Your team&#39;s Jira board, faster.
-          </p>
+          Design &amp;<br />Research
+        </h1>
+        <p
+          className="text-center text-base mb-9 mx-auto max-w-xs"
+          style={{ color: "var(--ink-soft)" }}
+        >
+          Your team&#39;s Jira board — without the wait.
+        </p>
+
+        <div
+          className="p-8"
+          style={{
+            background: "var(--surface)",
+            border: "1.5px solid var(--ink)",
+            borderRadius: "var(--r-xl)",
+          }}
+        >
 
           {error && (
             <div
               className="mb-4 px-4 py-3 rounded-xl text-sm"
               style={{
-                background: "#FEF2F2",
-                color: "#DC2626",
-                border: "1px solid #FECACA",
+                background: "var(--danger-wash)",
+                color: "var(--danger)",
+                border: "1px solid var(--danger-line)",
               }}
             >
               {error}
@@ -227,19 +206,19 @@ export default function LoginPage({
               <div
                 className="px-4 py-3 rounded-xl text-sm"
                 style={{
-                  background: "#F5E9EF",
-                  color: "#571541",
-                  border: "1px solid #E3C4D3",
+                  background: "var(--accent-wash)",
+                  color: "var(--accent)",
+                  border: "1px solid var(--accent-line)",
                 }}
               >
                 <p className="font-medium mb-1">Setup required</p>
-                <p style={{ color: "#78716C" }}>
+                <p style={{ color: "var(--ink-soft)" }}>
                   Add{" "}
-                  <code className="font-mono-key text-xs bg-white px-1 py-0.5 rounded">
+                  <code className="font-mono-key text-xs bg-[var(--surface)] px-1 py-0.5 rounded">
                     VITE_ATLASSIAN_CLIENT_ID
                   </code>{" "}
                   to your{" "}
-                  <code className="font-mono-key text-xs bg-white px-1 py-0.5 rounded">
+                  <code className="font-mono-key text-xs bg-[var(--surface)] px-1 py-0.5 rounded">
                     .env
                   </code>{" "}
                   file.
@@ -248,9 +227,9 @@ export default function LoginPage({
               <div
                 className="rounded-xl p-4 text-xs space-y-1"
                 style={{
-                  background: "#FAF6F0",
+                  background: "var(--bg)",
                   fontFamily: "'DM Sans', sans-serif",
-                  color: "#78716C",
+                  color: "var(--ink-soft)",
                 }}
               >
                 <p>VITE_ATLASSIAN_CLIENT_ID=your_client_id</p>
@@ -262,12 +241,7 @@ export default function LoginPage({
             <button
               onClick={handleLogin}
               disabled={loading}
-              className="w-full flex items-center justify-center gap-3 py-3 rounded-full text-white font-medium text-sm transition-all"
-              style={{
-                background: loading ? "#7A2C56" : "#571541",
-                opacity: loading ? 0.8 : 1,
-                fontFamily: "'DM Sans', sans-serif",
-              }}
+              className="btn-primary w-full flex items-center justify-center gap-3 py-3.5 text-[15px]"
             >
               {loading ? (
                 <>
@@ -308,7 +282,7 @@ export default function LoginPage({
           )}
         </div>
 
-        <p className="text-center text-xs mt-6" style={{ color: "#A8A29E" }}>
+        <p className="text-center text-xs mt-6" style={{ color: "var(--ink-faint)" }}>
           Each person logs in with their own Atlassian account.
           <br />
           No shared tokens.

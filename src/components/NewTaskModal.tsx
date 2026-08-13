@@ -152,7 +152,7 @@ export default function NewTaskModal({
         {error && (
           <p
             className="text-sm px-3 py-2 rounded-lg"
-            style={{ background: "#FEF2F2", color: "#DC2626" }}
+            style={{ background: "var(--danger-wash)", color: "var(--danger)" }}
           >
             {error}
           </p>
@@ -267,9 +267,9 @@ function Field({
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-medium" style={{ color: "#78716C" }}>
+      <label className="t-meta" style={{ color: "var(--ink-soft)" }}>
         {label}
-        {required && <span style={{ color: "#DC2626" }}> *</span>}
+        {required && <span style={{ color: "var(--danger)" }}> *</span>}
       </label>
       {children}
     </div>
@@ -297,23 +297,35 @@ export function ModalShell({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
-      style={{ background: "rgba(31,36,48,0.4)", backdropFilter: "blur(4px)" }}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center veil-in"
+      style={{
+        background: "var(--scrim)",
+        backdropFilter: "blur(6px)",
+        WebkitBackdropFilter: "blur(6px)",
+      }}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
-        className="w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-2xl shadow-xl overflow-y-auto"
-        style={{ maxHeight: "90vh", border: "1px solid #E5E3DC" }}
+        className="sheet-in w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl overflow-y-auto"
+        style={{
+          maxHeight: "90vh",
+          background: "var(--surface)",
+          border: "1px solid var(--ink)",
+          boxShadow: "var(--shadow-sheet)",
+        }}
       >
         {/* Header */}
         <div
-          className="flex items-center justify-between px-6 py-4"
-          style={{ borderBottom: "1px solid #F0EFE9" }}
+          className="sticky top-0 z-10 flex items-center justify-between gap-3 px-6 py-5"
+          style={{
+            borderBottom: "1.5px solid var(--ink)",
+            background: "var(--surface)",
+          }}
         >
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <h2
-              className="font-semibold text-base"
-              style={{ fontFamily: "'DM Sans', sans-serif", color: "#2B211D" }}
+              className="t-display text-xl leading-tight"
+              style={{ color: "var(--ink)" }}
             >
               {title}
             </h2>
@@ -321,76 +333,20 @@ export function ModalShell({
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full transition-colors hover:bg-gray-100"
-            style={{ color: "#78716C" }}
+            aria-label="Close"
+            className="btn-icon flex-shrink-0"
+            style={{ width: 32, height: 32 }}
           >
             ✕
           </button>
         </div>
 
         {/* Body */}
-        <div className="px-6 py-5">{children}</div>
+        <div className="px-6 py-6">{children}</div>
 
         {/* iOS safe area */}
         <div style={{ paddingBottom: "env(safe-area-inset-bottom)" }} />
       </div>
     </div>
   )
-}
-
-/* Shared field styles injected via className */
-const fieldStyles = `
-  .field-input {
-    width: 100%;
-    padding: 0.5rem 0.75rem;
-    border-radius: 0.625rem;
-    border: 1.5px solid #E5E3DC;
-    background: #FAFAF8;
-    font-size: 0.875rem;
-    color: #2B211D;
-    outline: none;
-    font-family: 'DM Sans', sans-serif;
-    transition: border-color 0.15s;
-    box-sizing: border-box;
-  }
-  .field-input:focus {
-    border-color: #571541;
-    background: white;
-  }
-  .btn-primary {
-    padding: 0.625rem 1.25rem;
-    border-radius: 9999px;
-    background: #571541;
-    color: white;
-    font-size: 0.875rem;
-    font-weight: 500;
-    font-family: 'DM Sans', sans-serif;
-    transition: background 0.15s;
-    cursor: pointer;
-  }
-  .btn-primary:hover:not(:disabled) { background: #430F32; }
-  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-  .btn-ghost {
-    padding: 0.625rem 1.25rem;
-    border-radius: 9999px;
-    border: 1.5px solid #E5E3DC;
-    background: transparent;
-    color: #78716C;
-    font-size: 0.875rem;
-    font-weight: 500;
-    font-family: 'DM Sans', sans-serif;
-    transition: background 0.15s;
-    cursor: pointer;
-  }
-  .btn-ghost:hover { background: #FAF6F0; }
-`
-
-if (
-  typeof document !== "undefined" &&
-  !document.getElementById("dsr-modal-styles")
-) {
-  const style = document.createElement("style")
-  style.id = "dsr-modal-styles"
-  style.textContent = fieldStyles
-  document.head.appendChild(style)
 }

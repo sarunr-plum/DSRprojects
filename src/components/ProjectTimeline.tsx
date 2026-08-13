@@ -143,36 +143,34 @@ export default function ProjectTimeline({
 
   return (
     <div
-      className="rounded-2xl overflow-hidden"
-      style={{ border: "1px solid #E5E3DC", background: "white" }}
+      className="rise-in overflow-hidden"
+      style={{
+        border: "1.5px solid var(--ink)",
+        borderRadius: "var(--r-lg)",
+        background: "var(--surface)",
+      }}
     >
       {/* Toolbar */}
       <div
-        className="flex items-center justify-between px-4 py-2.5"
-        style={{ borderBottom: "1px solid #F0EFE9" }}
+        className="flex items-center justify-between px-4 py-3"
+        style={{ borderBottom: "1.5px solid var(--ink)" }}
       >
         <button
           onClick={() => jumpToToday()}
-          className="text-xs font-medium px-3 py-1.5 rounded-full transition-colors"
-          style={{ color: "#571541", background: "#F5E9EF" }}
+          className="t-meta px-3.5 py-1.5 rounded-full transition-all active:scale-95"
+          style={{
+            color: "var(--surface)",
+            background: "var(--ink)",
+          }}
         >
           Today
         </button>
-        <div
-          className="flex items-center gap-0.5 rounded-full p-0.5"
-          style={{ background: "#FAF6F0" }}
-        >
+        <div className="seg">
           {ZOOMS.map((z) => (
             <button
               key={z}
               onClick={() => setZoom(z)}
-              className="text-xs px-3 py-1 rounded-full capitalize transition-colors"
-              style={{
-                background: zoom === z ? "white" : "transparent",
-                color: zoom === z ? "#2B211D" : "#78716C",
-                fontWeight: zoom === z ? 600 : 400,
-                boxShadow: zoom === z ? "0 1px 2px rgba(0,0,0,0.06)" : "none",
-              }}
+              className={`seg-item t-meta px-3 py-1.5 ${zoom === z ? "is-on" : ""}`}
             >
               {z}
             </button>
@@ -181,7 +179,7 @@ export default function ProjectTimeline({
       </div>
 
       {projects.length === 0 ? (
-        <div className="py-16 text-center text-sm" style={{ color: "#A8A29E" }}>
+        <div className="py-16 text-center text-sm" style={{ color: "var(--ink-faint)" }}>
           No projects to show.
         </div>
       ) : (
@@ -189,27 +187,27 @@ export default function ProjectTimeline({
           {/* Project name column — wide enough for most names, scrolls horizontally for the rest */}
           <div
             className="flex-shrink-0 w-56 sm:w-72"
-            style={{ borderRight: "1px solid #F0EFE9" }}
+            style={{ borderRight: "1px solid var(--line-soft)" }}
           >
             <div
               style={{
                 height: headerHeight,
-                borderBottom: "1px solid #F0EFE9",
+                borderBottom: "1px solid var(--line-soft)",
               }}
             />
             {projects.map((p) => (
               <button
                 key={p.key}
                 onClick={() => onSelect(p)}
-                className="w-full px-3 flex items-center text-left transition-colors hover:bg-gray-50"
+                className="w-full px-3 flex items-center text-left transition-colors hover:bg-[var(--surface-sunk)]"
                 style={{
                   height: ROW_HEIGHT,
-                  borderBottom: "1px solid #F9F8F5",
+                  borderBottom: "1px solid var(--line-soft)",
                 }}
               >
                 <span
                   className="text-xs font-medium block overflow-x-auto whitespace-nowrap"
-                  style={{ color: "#2B211D" }}
+                  style={{ color: "var(--ink)" }}
                 >
                   {p.fields.summary}
                 </span>
@@ -223,7 +221,7 @@ export default function ProjectTimeline({
               {groupHeader && (
                 <div
                   className="flex"
-                  style={{ borderBottom: "1px solid #F0EFE9", height: "24px" }}
+                  style={{ borderBottom: "1px solid var(--line-soft)", height: "24px" }}
                 >
                   {groupHeader.map((g, i) => (
                     <div
@@ -231,8 +229,8 @@ export default function ProjectTimeline({
                       className="text-xs font-medium flex items-center px-2 truncate flex-shrink-0"
                       style={{
                         width: g.widthDays * pxPerDay,
-                        color: "#78716C",
-                        borderRight: "1px solid #F9F8F5",
+                        color: "var(--ink-soft)",
+                        borderRight: "1px solid var(--line-soft)",
                       }}
                     >
                       {g.label}
@@ -243,7 +241,7 @@ export default function ProjectTimeline({
 
               <div
                 className="flex"
-                style={{ borderBottom: "1px solid #F0EFE9", height: "33px" }}
+                style={{ borderBottom: "1px solid var(--line-soft)", height: "33px" }}
               >
                 {columns.map((c, i) => (
                   <div
@@ -251,8 +249,8 @@ export default function ProjectTimeline({
                     className="text-xs flex items-center justify-center flex-shrink-0"
                     style={{
                       width: c.widthDays * pxPerDay,
-                      color: "#A8A29E",
-                      borderRight: "1px solid #F9F8F5",
+                      color: "var(--ink-faint)",
+                      borderRight: "1px solid var(--line-soft)",
                     }}
                   >
                     {c.label}
@@ -268,7 +266,7 @@ export default function ProjectTimeline({
                   bottom: 0,
                   left: todayLeft,
                   width: "2px",
-                  background: "#DC2626",
+                  background: "var(--accent)",
                   zIndex: 5,
                   pointerEvents: "none",
                 }}
@@ -285,10 +283,10 @@ export default function ProjectTimeline({
                   <button
                     key={p.key}
                     onClick={() => onSelect(p)}
-                    className="relative w-full text-left transition-colors hover:bg-gray-50"
+                    className="relative w-full text-left transition-colors hover:bg-[var(--surface-sunk)]"
                     style={{
                       height: ROW_HEIGHT,
-                      borderBottom: "1px solid #F9F8F5",
+                      borderBottom: "1px solid var(--line-soft)",
                     }}
                   >
                     {s && d ? (
@@ -311,7 +309,7 @@ export default function ProjectTimeline({
                         className="absolute top-3.5 text-xs px-2"
                         style={{
                           left: Math.max(todayLeft - 80, 0),
-                          color: "#C4C0B6",
+                          color: "var(--ink-ghost)",
                         }}
                       >
                         No dates set — tap to add

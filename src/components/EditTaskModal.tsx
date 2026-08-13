@@ -104,12 +104,12 @@ export default function EditTaskModal({
       href={`https://plumhq.atlassian.net/browse/${issue.key}`}
       target="_blank"
       rel="noopener noreferrer"
-      className="text-xs px-2 py-1 rounded-lg transition-colors hover:bg-indigo-100"
+      className="text-xs px-2 py-1 rounded-lg transition-colors hover:bg-[var(--accent-wash)]"
       style={{
         fontFamily: "'DM Sans', sans-serif",
-        color: "#571541",
-        background: "#F5E9EF",
-        border: "1px solid #E3C4D3",
+        color: "var(--accent)",
+        background: "var(--accent-wash)",
+        border: "1px solid var(--accent-line)",
         textDecoration: "none",
       }}
     >
@@ -123,7 +123,7 @@ export default function EditTaskModal({
         {error && (
           <p
             className="text-sm px-3 py-2 rounded-lg"
-            style={{ background: "#FEF2F2", color: "#DC2626" }}
+            style={{ background: "var(--danger-wash)", color: "var(--danger)" }}
           >
             {error}
           </p>
@@ -202,8 +202,8 @@ export default function EditTaskModal({
           <button
             type="button"
             onClick={() => setConfirmDelete(true)}
-            className="flex items-center justify-center w-9 h-9 rounded-full flex-shrink-0 transition-colors hover:bg-red-50"
-            style={{ border: "1.5px solid #FECACA", color: "#DC2626" }}
+            className="flex items-center justify-center w-9 h-9 rounded-full flex-shrink-0 transition-colors hover:bg-[var(--danger-wash)]"
+            style={{ border: "1.5px solid var(--danger-line)", color: "var(--danger)" }}
             title="Delete task"
           >
             <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
@@ -227,21 +227,21 @@ export default function EditTaskModal({
         {confirmDelete && (
           <div
             className="fixed inset-0 z-[60] flex items-center justify-center"
-            style={{ background: "rgba(31,36,48,0.55)", backdropFilter: "blur(4px)" }}
+            style={{ background: "var(--scrim)", backdropFilter: "blur(4px)" }}
           >
             <div
-              className="bg-white rounded-2xl shadow-2xl p-6 mx-4 max-w-sm w-full"
-              style={{ border: "1px solid #E5E3DC" }}
+              className="bg-[var(--surface)] rounded-2xl shadow-2xl p-6 mx-4 max-w-sm w-full"
+              style={{ border: "1px solid var(--line)" }}
             >
-              <div className="flex items-center justify-center w-11 h-11 rounded-full mx-auto mb-4" style={{ background: "#FEF2F2" }}>
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <path d="M10 7v4M10 13h.01M9 2.5l-7 12A1 1 0 003 16h14a1 1 0 00.87-1.5l-7-12a1 1 0 00-1.74 0z" stroke="#DC2626" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <div className="flex items-center justify-center w-11 h-11 rounded-full mx-auto mb-4" style={{ background: "var(--danger-wash)" }}>
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ color: "var(--danger)" }}>
+                  <path d="M10 7v4M10 13h.01M9 2.5l-7 12A1 1 0 003 16h14a1 1 0 00.87-1.5l-7-12a1 1 0 00-1.74 0z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </div>
-              <h3 className="text-base font-semibold text-center mb-1" style={{ fontFamily: "'DM Sans', sans-serif", color: "#2B211D" }}>
+              <h3 className="text-base font-semibold text-center mb-1" style={{ fontFamily: "'DM Sans', sans-serif", color: "var(--ink)" }}>
                 Delete this task?
               </h3>
-              <p className="text-sm text-center mb-5" style={{ color: "#78716C" }}>
+              <p className="text-sm text-center mb-5" style={{ color: "var(--ink-soft)" }}>
                 <span style={{ fontFamily: "'DM Sans', sans-serif" }}>{issue.key}</span> will be permanently deleted from Jira. This cannot be undone.
               </p>
               <div className="flex gap-2">
@@ -258,7 +258,7 @@ export default function EditTaskModal({
                   onClick={handleDelete}
                   disabled={deleting}
                   className="flex-1 px-4 py-2.5 rounded-full text-sm font-medium text-white transition-opacity disabled:opacity-50"
-                  style={{ background: "#DC2626", fontFamily: "'DM Sans', sans-serif" }}
+                  style={{ background: "var(--danger)", fontFamily: "'DM Sans', sans-serif" }}
                 >
                   {deleting ? "Deleting…" : "Yes, delete"}
                 </button>
@@ -282,9 +282,9 @@ function Field({
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-medium" style={{ color: "#78716C" }}>
+      <label className="t-meta" style={{ color: "var(--ink-soft)" }}>
         {label}
-        {required && <span style={{ color: "#DC2626" }}> *</span>}
+        {required && <span style={{ color: "var(--danger)" }}> *</span>}
       </label>
       {children}
     </div>

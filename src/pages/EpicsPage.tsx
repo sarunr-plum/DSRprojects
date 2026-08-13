@@ -12,14 +12,14 @@ interface Props {
 type ViewMode = "list" | "timeline"
 
 const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
-  "In Progress": { bg: "#F5E9EF", text: "#571541" },
-  "To Do": { bg: "#F5F3F0", text: "#78716C" },
-  Done: { bg: "#ECFDF5", text: "#059669" },
-  Blocked: { bg: "#FEF2F2", text: "#DC2626" },
+  "In Progress": { bg: "var(--accent-wash)", text: "var(--accent)" },
+  "To Do": { bg: "var(--surface-sunk)", text: "var(--ink-soft)" },
+  Done: { bg: "var(--ok-wash)", text: "var(--ok)" },
+  Blocked: { bg: "var(--danger-wash)", text: "var(--danger)" },
 }
 
 function statusStyle(name: string) {
-  return STATUS_COLORS[name] ?? { bg: "#F5F3F0", text: "#78716C" }
+  return STATUS_COLORS[name] ?? { bg: "var(--surface-sunk)", text: "var(--ink-soft)" }
 }
 
 function formatDate(iso: string) {
@@ -155,19 +155,27 @@ export default function EpicsPage({ onRegisterRefresh }: Props) {
 
   return (
     <main
-      className={`relative z-10 flex-1 px-4 sm:px-6 py-6 mx-auto w-full ${
+      className={`relative z-10 flex-1 px-4 sm:px-8 py-8 mx-auto w-full ${
         view === "timeline" ? "max-w-6xl" : "max-w-5xl"
       }`}
     >
       {!loading && epics.length > 0 && (
-        <p className="text-xs mb-3" style={{ color: "#78716C" }}>
-          {enabledCount} of {epics.length} visible on board
-        </p>
+        <div
+          className="flex items-end justify-between gap-4 mb-6 pb-4 rise-in"
+          style={{ borderBottom: "1.5px solid var(--ink)" }}
+        >
+          <h2 className="t-display text-[clamp(1.75rem,5vw,2.75rem)]" style={{ color: "var(--ink)" }}>
+            Projects
+          </h2>
+          <p className="t-meta pb-1.5" style={{ color: "var(--ink-soft)" }}>
+            {enabledCount} / {epics.length} on board
+          </p>
+        </div>
       )}
 
       {/* Filters */}
       {!loading && epics.length > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-5">
           <div className="flex flex-wrap gap-2">
             <MultiSelectFilter
               label="Status"
@@ -190,29 +198,19 @@ export default function EpicsPage({ onRegisterRefresh }: Props) {
                   setFilterAssignee([])
                 }}
                 className="text-xs px-3 py-1.5 rounded-full"
-                style={{ color: "#571541", background: "#F5E9EF" }}
+                style={{ color: "var(--accent)", background: "var(--accent-wash)" }}
               >
                 Clear filters
               </button>
             )}
           </div>
 
-          <div
-            className="flex items-center gap-0.5 rounded-full p-0.5 flex-shrink-0"
-            style={{ background: "#EFEDE6" }}
-          >
+          <div className="seg flex-shrink-0">
             {(["list", "timeline"] as ViewMode[]).map((v) => (
               <button
                 key={v}
                 onClick={() => setView(v)}
-                className="text-xs px-3.5 py-1.5 rounded-full capitalize transition-colors"
-                style={{
-                  fontFamily: "'DM Sans', sans-serif",
-                  background: view === v ? "white" : "transparent",
-                  color: view === v ? "#2B211D" : "#78716C",
-                  fontWeight: view === v ? 600 : 400,
-                  boxShadow: view === v ? "0 1px 2px rgba(0,0,0,0.08)" : "none",
-                }}
+                className={`seg-item t-meta px-4 py-1.5 ${view === v ? "is-on" : ""}`}
               >
                 {v}
               </button>
@@ -226,8 +224,8 @@ export default function EpicsPage({ onRegisterRefresh }: Props) {
           {[...Array(5)].map((_, i) => (
             <div
               key={i}
-              className="h-16 bg-white rounded-2xl animate-pulse"
-              style={{ border: "1px solid #E5E3DC" }}
+              className="h-16 bg-[var(--surface)] rounded-2xl animate-pulse"
+              style={{ border: "1px solid var(--line)" }}
             />
           ))}
         </div>
@@ -237,9 +235,9 @@ export default function EpicsPage({ onRegisterRefresh }: Props) {
         <div
           className="px-4 py-3 rounded-xl text-sm mb-4"
           style={{
-            background: "#FEF2F2",
-            color: "#DC2626",
-            border: "1px solid #FECACA",
+            background: "var(--danger-wash)",
+            color: "var(--danger)",
+            border: "1px solid var(--danger-line)",
           }}
         >
           {error}
@@ -250,13 +248,13 @@ export default function EpicsPage({ onRegisterRefresh }: Props) {
         <div className="text-center py-16">
           <p
             className="text-base font-medium mb-1"
-            style={{ color: "#2B211D", fontFamily: "'DM Sans', sans-serif" }}
+            style={{ color: "var(--ink)", fontFamily: "'DM Sans', sans-serif" }}
           >
             {epics.length === 0
               ? "No projects found"
               : "No projects match your filters"}
           </p>
-          <p className="text-sm" style={{ color: "#78716C" }}>
+          <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
             {epics.length === 0
               ? "Make sure your Jira project has at least one Epic."
               : "Try adjusting the filters above."}
@@ -273,16 +271,13 @@ export default function EpicsPage({ onRegisterRefresh }: Props) {
       )}
 
       {!loading && filtered.length > 0 && view === "list" && (
-        <div className="space-y-2">
-          <p
-            className="text-xs font-medium px-1 mb-3"
-            style={{ color: "#A8A29E" }}
-          >
-            Toggle projects on to show their tasks on the board. Tap a project
-            for details. Sorted by newest first.
+        <div className="space-y-2.5">
+          <p className="t-meta px-1 mb-4" style={{ color: "var(--ink-faint)" }}>
+            Switch a project on to show its tasks · tap for details · newest
+            first
           </p>
 
-          {filtered.map((epic) => {
+          {filtered.map((epic, i) => {
             const isVisible = visibility[epic.key] ?? false
             const s = statusStyle(epic.fields.status.name)
 
@@ -293,8 +288,8 @@ export default function EpicsPage({ onRegisterRefresh }: Props) {
                 tabIndex={0}
                 onClick={() => setSelectedEpic(epic)}
                 onKeyDown={(e) => e.key === "Enter" && setSelectedEpic(epic)}
-                className="flex items-center gap-4 bg-white px-4 py-3.5 rounded-2xl transition-shadow hover:shadow-sm cursor-pointer"
-                style={{ border: "1px solid #E5E3DC" }}
+                className="card card-interactive rise-in flex items-center gap-4 px-5 py-4"
+                style={{ animationDelay: `${Math.min(i, 12) * 28}ms` }}
               >
                 {/* Toggle */}
                 <button
@@ -305,10 +300,10 @@ export default function EpicsPage({ onRegisterRefresh }: Props) {
                     toggle(epic.key, !isVisible)
                   }}
                   className="flex-shrink-0 w-10 h-6 rounded-full transition-colors relative"
-                  style={{ background: isVisible ? "#571541" : "#E5E3DC" }}
+                  style={{ background: isVisible ? "var(--accent)" : "var(--line)" }}
                 >
                   <span
-                    className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all"
+                    className="absolute top-1 w-4 h-4 bg-[var(--surface)] rounded-full shadow-sm transition-all"
                     style={{
                       left: isVisible ? "calc(100% - 1.25rem)" : "0.25rem",
                     }}
@@ -318,40 +313,33 @@ export default function EpicsPage({ onRegisterRefresh }: Props) {
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                   <span
-                    className="text-sm font-medium block truncate"
-                    style={{
-                      color: "#2B211D",
-                      fontFamily: "'DM Sans', sans-serif",
-                    }}
+                    className="text-[15px] font-semibold block truncate"
+                    style={{ color: "var(--ink)", letterSpacing: "-0.01em" }}
                   >
                     {epic.fields.summary}
                   </span>
-                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
                     <a
                       href={`https://plumhq.atlassian.net/browse/${epic.key}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={(e) => e.stopPropagation()}
-                      className="text-xs hover:underline flex-shrink-0"
-                      style={{
-                        fontFamily: "'DM Sans', sans-serif",
-                        color: "#78716C",
-                      }}
+                      className="link t-key text-[11px] flex-shrink-0"
                     >
                       {epic.key}
                     </a>
                     {epic.fields.assignee && (
-                      <span className="text-xs" style={{ color: "#A8A29E" }}>
+                      <span className="text-xs" style={{ color: "var(--ink-faint)" }}>
                         · {epic.fields.assignee.displayName}
                       </span>
                     )}
                     {epic.fields.startDate && (
-                      <span className="text-xs" style={{ color: "#A8A29E" }}>
+                      <span className="text-xs" style={{ color: "var(--ink-faint)" }}>
                         · Start {formatDate(epic.fields.startDate)}
                       </span>
                     )}
                     {epic.fields.duedate && (
-                      <span className="text-xs" style={{ color: "#A8A29E" }}>
+                      <span className="text-xs" style={{ color: "var(--ink-faint)" }}>
                         · Due {formatDate(epic.fields.duedate)}
                       </span>
                     )}
@@ -360,7 +348,7 @@ export default function EpicsPage({ onRegisterRefresh }: Props) {
 
                 {/* Status badge */}
                 <span
-                  className="text-xs px-2.5 py-1 rounded-full flex-shrink-0 font-medium"
+                  className="t-meta px-2.5 py-1.5 rounded-full flex-shrink-0"
                   style={{ background: s.bg, color: s.text }}
                 >
                   {epic.fields.status.name}

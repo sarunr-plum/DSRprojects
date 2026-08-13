@@ -18,9 +18,9 @@ function dueDateStyle(
     day: "numeric",
     month: "short",
   })
-  if (diffDays < 0) return { label, color: "#DC2626", bg: "#FEF2F2" }
-  if (diffDays <= 3) return { label, color: "#D97706", bg: "#FFFBEB" }
-  return { label, color: "#78716C", bg: "#F5F3F0" }
+  if (diffDays < 0) return { label, color: "var(--danger)", bg: "var(--danger-wash)" }
+  if (diffDays <= 3) return { label, color: "var(--warn)", bg: "var(--warn-wash)" }
+  return { label, color: "var(--ink-soft)", bg: "var(--surface-sunk)" }
 }
 
 export default function TaskCard({ issue, onEdit, isNew }: Props) {
@@ -46,7 +46,7 @@ export default function TaskCard({ issue, onEdit, isNew }: Props) {
         cursor: isDragging ? "grabbing" : "grab",
         touchAction: "none",
       }}
-      className={`group bg-white rounded-xl px-4 py-3 shadow-sm select-none transition-shadow hover:shadow-md${
+      className={`card card-interactive group px-4 py-3.5 select-none${
         isNew ? " task-card-enter" : ""
       }`}
       role="button"
@@ -55,41 +55,30 @@ export default function TaskCard({ issue, onEdit, isNew }: Props) {
     >
       {/* Summary */}
       <p
-        className="text-sm font-medium leading-snug mb-2.5"
-        style={{ color: "#2B211D" }}
+        className="text-[15px] font-semibold leading-snug mb-3"
+        style={{ color: "var(--ink)", letterSpacing: "-0.01em" }}
       >
         {issue.fields.summary}
       </p>
 
       {/* Key + Epic */}
-      <p
-        className="text-xs truncate mb-1.5"
-        style={{ color: "#A8A29E", fontFamily: "'DM Sans', sans-serif" }}
-      >
+      <p className="t-key text-[11px] truncate" style={{ color: "var(--ink-faint)" }}>
         <a
           href={`https://plumhq.atlassian.net/browse/${issue.key}`}
           target="_blank"
           rel="noopener noreferrer"
           onClick={(e) => e.stopPropagation()}
-          className="hover:underline"
-          style={{ color: "#78716C" }}
+          className="link"
         >
           {issue.key}
         </a>
-        {epicName && (
-          <span
-            style={{ color: "#A8A29E", fontFamily: "'DM Sans', sans-serif" }}
-          >
-            {" "}
-            | {epicName}
-          </span>
-        )}
+        {epicName && <span> | {epicName}</span>}
       </p>
 
       {/* Due date */}
       {due && (
         <span
-          className="inline-block text-xs px-2 py-0.5 rounded-full font-medium"
+          className="t-meta inline-block mt-2.5 px-2 py-1 rounded-full"
           style={{ background: due.bg, color: due.color }}
         >
           Due {due.label}

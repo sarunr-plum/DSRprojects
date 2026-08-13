@@ -52,9 +52,9 @@ export default function MultiSelectFilter({
         onClick={() => setOpen((o) => !o)}
         className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full transition-colors"
         style={{
-          border: `1.5px solid ${selected.length > 0 ? "#571541" : "#E5E3DC"}`,
-          background: selected.length > 0 ? "#F5E9EF" : "white",
-          color: selected.length > 0 ? "#571541" : "#2B211D",
+          border: `1.5px solid ${selected.length > 0 ? "var(--accent)" : "var(--line)"}`,
+          background: selected.length > 0 ? "var(--accent-wash)" : "var(--surface)",
+          color: selected.length > 0 ? "var(--accent)" : "var(--ink)",
         }}
       >
         <span className="truncate max-w-[10rem]">{displayLabel}</span>
@@ -78,19 +78,13 @@ export default function MultiSelectFilter({
 
       {open && (
         <div
-          className="absolute z-50 mt-1 rounded-xl overflow-hidden shadow-lg"
-          style={{
-            border: "1.5px solid #E5E3DC",
-            background: "white",
-            minWidth: "200px",
-            maxHeight: "260px",
-            overflowY: "auto",
-          }}
+          className="absolute z-50 mt-1.5 rounded-xl overflow-hidden pop-panel"
+          style={{ minWidth: "210px", maxHeight: "260px", overflowY: "auto" }}
         >
           {options.length === 0 ? (
             <div
               className="px-3 py-3 text-sm text-center"
-              style={{ color: "#A8A29E" }}
+              style={{ color: "var(--ink-faint)" }}
             >
               No options
             </div>
@@ -100,8 +94,8 @@ export default function MultiSelectFilter({
               return (
                 <label
                   key={opt}
-                  className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer transition-colors hover:bg-gray-50"
-                  style={{ color: "#2B211D" }}
+                  className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer transition-colors hover:bg-[var(--surface-sunk)]"
+                  style={{ color: "var(--ink)" }}
                 >
                   <input
                     type="checkbox"
@@ -112,15 +106,15 @@ export default function MultiSelectFilter({
                   <span
                     className="flex-shrink-0 w-4 h-4 rounded flex items-center justify-center transition-colors"
                     style={{
-                      border: `1.5px solid ${checked ? "#571541" : "#D6D2CC"}`,
-                      background: checked ? "#571541" : "white",
+                      border: `1.5px solid ${checked ? "var(--accent)" : "var(--line)"}`,
+                      background: checked ? "var(--accent)" : "var(--surface)",
                     }}
                   >
                     {checked && (
                       <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
                         <path
                           d="M1 4l3 3 5-6"
-                          stroke="white"
+                          stroke="var(--surface)"
                           strokeWidth="1.75"
                           strokeLinecap="round"
                           strokeLinejoin="round"
@@ -137,8 +131,8 @@ export default function MultiSelectFilter({
             <button
               type="button"
               onClick={() => onChange([])}
-              className="w-full text-left text-xs px-3 py-2 transition-colors hover:bg-gray-50"
-              style={{ color: "#571541", borderTop: "1px solid #F0EFE9" }}
+              className="w-full text-left text-xs px-3 py-2 transition-colors hover:bg-[var(--surface-sunk)]"
+              style={{ color: "var(--accent)", borderTop: "1px solid var(--line-soft)" }}
             >
               Clear
             </button>

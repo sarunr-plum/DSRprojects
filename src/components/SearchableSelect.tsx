@@ -81,8 +81,8 @@ export default function SearchableSelect({
       <div
         className="flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer"
         style={{
-          border: `1.5px solid ${open ? "#571541" : "#E5E3DC"}`,
-          background: open ? "white" : "#FAFAF8",
+          border: `1.5px solid ${open ? "var(--accent)" : "var(--line)"}`,
+          background: open ? "var(--surface)" : "var(--surface-sunk)",
           minHeight: "38px",
         }}
         onClick={() => {
@@ -98,13 +98,13 @@ export default function SearchableSelect({
             onKeyDown={handleInputKeyDown}
             placeholder={placeholder}
             className="flex-1 bg-transparent outline-none text-sm"
-            style={{ color: "#2B211D", fontFamily: "'DM Sans', sans-serif" }}
+            style={{ color: "var(--ink)", fontFamily: "'DM Sans', sans-serif" }}
             onClick={(e) => e.stopPropagation()}
           />
         ) : (
           <span
             className="text-sm flex-1 truncate"
-            style={{ color: selected ? "#2B211D" : "#A8A29E" }}
+            style={{ color: selected ? "var(--ink)" : "var(--ink-faint)" }}
           >
             {selected ? selected.label : emptyLabel}
           </span>
@@ -113,7 +113,7 @@ export default function SearchableSelect({
           className="flex-shrink-0 ml-2 transition-transform"
           style={{
             transform: open ? "rotate(180deg)" : "rotate(0deg)",
-            color: "#A8A29E",
+            color: "var(--ink-faint)",
           }}
           width="14"
           height="14"
@@ -132,17 +132,12 @@ export default function SearchableSelect({
 
       {open && (
         <div
-          className="absolute z-50 w-full mt-1 rounded-xl overflow-hidden shadow-lg"
-          style={{
-            border: "1.5px solid #E5E3DC",
-            background: "white",
-            maxHeight: "220px",
-            overflowY: "auto",
-          }}
+          className="absolute z-50 w-full mt-1.5 rounded-xl overflow-hidden pop-panel"
+          style={{ maxHeight: "230px", overflowY: "auto" }}
         >
           <div
-            className="px-3 py-2 cursor-pointer hover:bg-gray-50 text-sm"
-            style={{ color: "#78716C", borderBottom: "1px solid #F0EFE9" }}
+            className="px-3 py-2 cursor-pointer hover:bg-[var(--surface-sunk)] text-sm"
+            style={{ color: "var(--ink-soft)", borderBottom: "1px solid var(--line-soft)" }}
             onClick={() => handleSelect("")}
           >
             {emptyLabel}
@@ -150,7 +145,7 @@ export default function SearchableSelect({
           {filtered.length === 0 ? (
             <div
               className="px-3 py-3 text-sm text-center"
-              style={{ color: "#A8A29E" }}
+              style={{ color: "var(--ink-faint)" }}
             >
               No results
             </div>
@@ -161,10 +156,10 @@ export default function SearchableSelect({
                   key={opt.value}
                   className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide"
                   style={{
-                    color: "#A8A29E",
-                    background: "#FAFAF8",
-                    borderTop: "1px solid #F0EFE9",
-                    borderBottom: "1px solid #F0EFE9",
+                    color: "var(--ink-faint)",
+                    background: "var(--surface-sunk)",
+                    borderTop: "1px solid var(--line-soft)",
+                    borderBottom: "1px solid var(--line-soft)",
                   }}
                 >
                   {opt.label}
@@ -174,17 +169,17 @@ export default function SearchableSelect({
                   key={opt.value}
                   className="px-3 py-2 cursor-pointer text-sm"
                   style={{
-                    background: opt.value === value ? "#F5E9EF" : "transparent",
-                    color: opt.value === value ? "#571541" : "#2B211D",
+                    background: opt.value === value ? "var(--accent-wash)" : "transparent",
+                    color: opt.value === value ? "var(--accent)" : "var(--ink)",
                   }}
                   onMouseEnter={(e) => {
                     if (opt.value !== value)
                       (e.currentTarget as HTMLElement).style.background =
-                        "#FAF9F7"
+                        "var(--surface-sunk)"
                   }}
                   onMouseLeave={(e) => {
                     ;(e.currentTarget as HTMLElement).style.background =
-                      opt.value === value ? "#F5E9EF" : "transparent"
+                      opt.value === value ? "var(--accent-wash)" : "transparent"
                   }}
                   onClick={() => handleSelect(opt.value)}
                 >

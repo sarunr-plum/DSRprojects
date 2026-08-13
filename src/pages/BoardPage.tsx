@@ -16,6 +16,7 @@ import {
   type JiraEpic,
 } from "../lib/jira"
 import { getVisibleEpicKeys } from "../lib/storage"
+import { cheer } from "../lib/mood"
 import {
   COLUMNS,
   STATUS_TO_COLUMN,
@@ -26,6 +27,7 @@ import KanbanColumn from "../components/KanbanColumn"
 import TaskCard from "../components/TaskCard"
 import NewTaskModal from "../components/NewTaskModal"
 import EditTaskModal from "../components/EditTaskModal"
+import Logo from "../components/Logo"
 
 interface Props {
   onGoToProjects: () => void
@@ -103,6 +105,7 @@ export default function BoardPage({
 
   function handleTaskCreated(issue: JiraIssue) {
     setNewTaskConfig(null)
+    cheer("sparkle")
     setIssues((prev) => [issue, ...prev])
     setNewIssueKeys((prev) => new Set(prev).add(issue.key))
     setTimeout(() => {
@@ -202,9 +205,14 @@ export default function BoardPage({
       ),
     )
 
+    if (targetColId === "done") cheer("heart")
+    else if (targetColId === "inprogress") cheer("rocket")
+    else if (targetColId === "blocked") cheer("oops")
+
     try {
       await transitionToStatus(issueKey, targetStatusNames)
     } catch {
+      cheer("oops")
       loadTasks()
     }
   }
@@ -217,19 +225,21 @@ export default function BoardPage({
       {/* Person tabs */}
       {people.length > 0 && (
         <div
-          className="flex gap-1 px-4 sm:px-6 py-2 overflow-x-auto"
-          style={{ borderBottom: "1px solid #E5E3DC", scrollbarWidth: "none" }}
+          className="flex gap-2 px-4 sm:px-8 py-3 overflow-x-auto no-bar"
+          style={{ borderBottom: "1px solid var(--line)" }}
         >
-          {people.map((person) => (
+          {people.map((person, i) => (
             <button
               key={person}
               onClick={() => setActiveTab(person)}
-              className="flex-shrink-0 text-sm px-4 py-1.5 rounded-full transition-all"
+              className="t-meta flex-shrink-0 px-4 py-2 rounded-full whitespace-nowrap rise-in"
               style={{
-                fontFamily: "'DM Sans', sans-serif",
-                fontWeight: activeTab === person ? 600 : 400,
-                background: activeTab === person ? "#2B211D" : "transparent",
-                color: activeTab === person ? "white" : "#78716C",
+                animationDelay: `${Math.min(i, 10) * 25}ms`,
+                background: activeTab === person ? "var(--ink)" : "transparent",
+                color: activeTab === person ? "var(--bg)" : "var(--ink-soft)",
+                border: `1px solid ${activeTab === person ? "var(--ink)" : "var(--line)"}`,
+                transition:
+                  "background var(--t) var(--ease), color var(--t) var(--ease), border-color var(--t) var(--ease)",
               }}
             >
               {person}
@@ -240,16 +250,16 @@ export default function BoardPage({
 
       {/* Board */}
       <main
-        className="relative z-10 flex-1 overflow-auto px-4 sm:px-6 py-5"
-        style={{ paddingBottom: "env(safe-area-inset-bottom, 24px)" }}
+        className="relative z-10 flex-1 overflow-auto px-4 sm:px-8 py-8"
+        style={{ paddingBottom: "env(safe-area-inset-bottom, 32px)" }}
       >
         {error && (
           <div
-            className="mb-4 px-4 py-3 rounded-xl text-sm"
+            className="mb-5 px-4 py-3 rounded-xl text-sm"
             style={{
-              background: "#FEF2F2",
-              color: "#DC2626",
-              border: "1px solid #FECACA",
+              background: "var(--danger-wash)",
+              color: "var(--danger)",
+              border: "1px solid var(--danger-line)",
             }}
           >
             {error}{" "}
@@ -261,30 +271,18 @@ export default function BoardPage({
 
         {/* No epics enabled */}
         {!loading && visibleEpicKeys.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
-            <div
-              className="w-14 h-14 rounded-2xl flex items-center justify-center mb-2"
-              style={{ background: "#F5E9EF" }}
-            >
-              <span className="text-2xl">🗂️</span>
-            </div>
+          <div className="flex flex-col items-center justify-center py-28 text-center gap-4 rise-in">
+            <Logo size={72} />
             <p
-              className="text-base font-semibold"
-              style={{ fontFamily: "'DM Sans', sans-serif", color: "#2B211D" }}
+              className="t-display text-3xl mt-2"
+              style={{ color: "var(--ink)" }}
             >
-              No projects enabled
+              Nothing here yet
             </p>
-            <p className="text-sm max-w-xs" style={{ color: "#78716C" }}>
-              Head to Projects and toggle on the ones you want to track.
+            <p className="text-sm max-w-xs" style={{ color: "var(--ink-soft)" }}>
+              Head to Projects and switch on the ones you want to track.
             </p>
-            <button
-              onClick={onGoToProjects}
-              className="mt-2 px-5 py-2.5 rounded-full text-sm font-medium text-white"
-              style={{
-                background: "#571541",
-                fontFamily: "'DM Sans', sans-serif",
-              }}
-            >
+            <button onClick={onGoToProjects} className="btn-primary mt-2">
               Manage Projects
             </button>
           </div>
@@ -296,15 +294,15 @@ export default function BoardPage({
             {COLUMNS.map((col) => (
               <div key={col.id} className="flex-shrink-0 w-72 sm:w-80">
                 <div className="flex items-center gap-2 mb-3 px-1">
-                  <div className="w-2 h-2 rounded-full bg-gray-200 animate-pulse" />
-                  <div className="h-4 w-20 rounded bg-gray-200 animate-pulse" />
+                  <div className="w-2 h-2 rounded-full bg-[var(--track)] animate-pulse" />
+                  <div className="h-4 w-20 rounded bg-[var(--track)] animate-pulse" />
                 </div>
                 <div className="flex flex-col gap-2.5">
                   {[...Array(2)].map((_, i) => (
                     <div
                       key={i}
-                      className="h-20 bg-white rounded-xl animate-pulse"
-                      style={{ border: "1px solid #E5E3DC" }}
+                      className="h-20 bg-[var(--surface)] rounded-xl animate-pulse"
+                      style={{ border: "1px solid var(--line)" }}
                     />
                   ))}
                 </div>
@@ -377,6 +375,7 @@ export default function BoardPage({
           onClose={() => setEditingIssue(null)}
           onUpdated={() => {
             setEditingIssue(null)
+            cheer("thumbsup")
             loadTasks()
           }}
           onDeleted={() => {

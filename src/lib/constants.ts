@@ -7,11 +7,12 @@ export const ATLASSIAN_CLIENT_SECRET =
 export const ATLASSIAN_REDIRECT_URI =
   import.meta.env.VITE_ATLASSIAN_REDIRECT_URI || "https://roastroom.figma.site"
 
+// Colours resolve from the design tokens in index.css — recolour there, not here.
 export const COLUMNS = [
-  { id: "todo", label: "To Do", color: "#78716C" },
-  { id: "inprogress", label: "In Progress", color: "#571541" },
-  { id: "done", label: "Done", color: "#059669" },
-  { id: "blocked", label: "Blocked", color: "#DC2626" },
+  { id: "todo", label: "To Do", color: "var(--col-todo)" },
+  { id: "inprogress", label: "In Progress", color: "var(--col-progress)" },
+  { id: "done", label: "Done", color: "var(--col-done)" },
+  { id: "blocked", label: "Blocked", color: "var(--col-blocked)" },
 ] as const
 
 export type ColumnId = typeof COLUMNS[number]["id"]
