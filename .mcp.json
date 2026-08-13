@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "Atlassian__28850eb8": {
+      "type": "http",
+      "url": "${MCP_PROXY_BASE_URL}/proxy/28850eb8-2fcd-467b-aff7-28a8c5515068",
+      "headers": {
+        "Authorization": "Bearer ${MCP_PROXY_AUTH_TOKEN}"
+      }
+    }
+  }
+}
