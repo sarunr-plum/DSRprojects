@@ -164,10 +164,17 @@ export default function BoardPage({
   const visibleColumns = COLUMNS.filter((c) => activeColumnIds.has(c.id))
 
   function issuesForColumn(colId: ColumnId) {
-    return tabIssues.filter((i) => {
-      const mapped = STATUS_TO_COLUMN[i.fields.status.name]
-      return mapped === colId || (!mapped && colId === "todo")
-    })
+    return tabIssues
+      .filter((i) => {
+        const mapped = STATUS_TO_COLUMN[i.fields.status.name]
+        return mapped === colId || (!mapped && colId === "todo")
+      })
+      .sort((a, b) => {
+        if (!a.fields.duedate && !b.fields.duedate) return 0
+        if (!a.fields.duedate) return 1
+        if (!b.fields.duedate) return -1
+        return a.fields.duedate.localeCompare(b.fields.duedate)
+      })
   }
 
   async function handleDragEnd(event: DragEndEvent) {

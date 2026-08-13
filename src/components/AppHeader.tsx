@@ -23,7 +23,7 @@ export default function AppHeader({
 
   return (
     <header
-      className="sticky top-0 z-30 px-4 sm:px-6 py-3"
+      className="sticky top-0 z-30 px-4 sm:px-6 py-5"
       style={{
         background: "rgba(250,246,240,0.9)",
         backdropFilter: "blur(12px)",
@@ -34,7 +34,30 @@ export default function AppHeader({
         className="grid items-center"
         style={{ gridTemplateColumns: "1fr auto 1fr" }}
       >
-        <div />
+        <div className="justify-self-start">
+          <div
+            className="flex items-center gap-0.5 rounded-full p-0.5"
+            style={{ background: "#EFEDE6" }}
+          >
+            {(["tasks", "projects"] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => onTabChange(tab)}
+                className="text-sm px-5 py-1.5 rounded-full capitalize transition-colors"
+                style={{
+                  fontFamily: "'DM Sans', sans-serif",
+                  background: activeTab === tab ? "white" : "transparent",
+                  color: activeTab === tab ? "#2B211D" : "#78716C",
+                  fontWeight: activeTab === tab ? 600 : 400,
+                  boxShadow:
+                    activeTab === tab ? "0 1px 2px rgba(0,0,0,0.08)" : "none",
+                }}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+        </div>
 
         <div className="flex items-center gap-2 justify-self-center">
           <div
@@ -123,31 +146,6 @@ export default function AppHeader({
               <line x1="21" y1="12" x2="9" y2="12" />
             </svg>
           </button>
-        </div>
-      </div>
-
-      <div className="flex justify-center mt-3">
-        <div
-          className="flex items-center gap-0.5 rounded-full p-0.5"
-          style={{ background: "#EFEDE6" }}
-        >
-          {(["tasks", "projects"] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => onTabChange(tab)}
-              className="text-sm px-5 py-1.5 rounded-full capitalize transition-colors"
-              style={{
-                fontFamily: "'DM Sans', sans-serif",
-                background: activeTab === tab ? "white" : "transparent",
-                color: activeTab === tab ? "#2B211D" : "#78716C",
-                fontWeight: activeTab === tab ? 600 : 400,
-                boxShadow:
-                  activeTab === tab ? "0 1px 2px rgba(0,0,0,0.08)" : "none",
-              }}
-            >
-              {tab}
-            </button>
-          ))}
         </div>
       </div>
     </header>

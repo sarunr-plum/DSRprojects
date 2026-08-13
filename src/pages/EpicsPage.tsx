@@ -106,6 +106,22 @@ export default function EpicsPage({ onRegisterRefresh }: Props) {
     )
   }
 
+  function handleStatusChanged(
+    epicKey: string,
+    status: { id: string; name: string },
+  ) {
+    setEpics((prev) =>
+      prev.map((e) =>
+        e.key === epicKey ? { ...e, fields: { ...e.fields, status } } : e,
+      ),
+    )
+    setSelectedEpic((prev) =>
+      prev && prev.key === epicKey
+        ? { ...prev, fields: { ...prev.fields, status } }
+        : prev,
+    )
+  }
+
   // Derive unique filter options
   const statusOptions = useMemo(
     () => Array.from(new Set(epics.map((e) => e.fields.status.name))).sort(),
@@ -360,6 +376,7 @@ export default function EpicsPage({ onRegisterRefresh }: Props) {
           epic={selectedEpic}
           onClose={() => setSelectedEpic(null)}
           onDatesChanged={handleDatesChanged}
+          onStatusChanged={handleStatusChanged}
         />
       )}
     </main>

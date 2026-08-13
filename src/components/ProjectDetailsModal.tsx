@@ -1,10 +1,13 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import NewTaskModal, { ModalShell } from "./NewTaskModal"
 import {
   getTasksForEpics,
   updateEpicDates,
+  getTransitions,
+  applyTransition,
   type JiraEpic,
   type JiraIssue,
+  type JiraTransition,
 } from "../lib/jira"
 
 interface Props {
@@ -14,6 +17,7 @@ interface Props {
     epicKey: string,
     fields: { startDate?: string; dueDate?: string },
   ) => void
+  onStatusChanged: (epicKey: string, status: { id: string; name: string }) => void
 }
 
 const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
@@ -31,12 +35,18 @@ export default function ProjectDetailsModal({
   epic,
   onClose,
   onDatesChanged,
+  onStatusChanged,
 }: Props) {
   const [startDate, setStartDate] = useState(epic.fields.startDate ?? "")
   const [dueDate, setDueDate] = useState(epic.fields.duedate ?? "")
   const [savingField, setSavingField] =
     useState<"startDate" | "dueDate" | null>(null)
   const [dateError, setDateError] = useState("")
+
+  const [currentStatus, setCurrentStatus] = useState(epic.fields.status.name)
+  const [transitions, setTransitions] = useState<JiraTransition[]>([])
+  const [statusSaving, setStatusSaving] = useState(false)
+  const [statusError, setStatusError] = useState("")
 
   const [tasks, setTasks] = useState<JiraIssue[]>([])
   const [tasksLoading, setTasksLoading] = useState(true)
@@ -53,6 +63,37 @@ export default function ProjectDetailsModal({
       )
       .finally(() => setTasksLoading(false))
   }, [epic.key])
+
+  useEffect(() => {
+    getTransitions(epic.key)
+      .then(setTransitions)
+      .catch(() => setTransitions([]))
+  }, [epic.key])
+
+  async function handleStatusChange(transitionId: string) {
+    const transition = transitions.find((t) => t.id === transitionId)
+    if (!transition) return
+    const prevStatus = currentStatus
+    setCurrentStatus(transition.to.name)
+    setStatusSaving(true)
+    setStatusError("")
+    try {
+      await applyTransition(epic.key, transition.id)
+      onStatusChanged(epic.key, { id: transition.to.id, name: transition.to.name })
+      getTransitions(epic.key)
+        .then(setTransitions)
+        .catch(() => setTransitions([]))
+    } catch (err) {
+      setCurrentStatus(prevStatus)
+      const message =
+        err instanceof Error && err.message.includes("403")
+          ? "You don't have permission to change this project's status in Jira."
+          : "Failed to update status — please try again."
+      setStatusError(message)
+    } finally {
+      setStatusSaving(false)
+    }
+  }
 
   async function handleDateChange(
     field: "startDate" | "dueDate",
@@ -90,7 +131,7 @@ export default function ProjectDetailsModal({
     }
   }
 
-  const s = statusStyle(epic.fields.status.name)
+  const s = statusStyle(currentStatus)
 
   const keyTag = (
     <a
@@ -114,18 +155,37 @@ export default function ProjectDetailsModal({
     <ModalShell title={epic.fields.summary} onClose={onClose} topRight={keyTag}>
       <div className="flex flex-col gap-5">
         <div className="flex items-center gap-2 flex-wrap">
-          <span
-            className="text-xs px-2.5 py-1 rounded-full font-medium"
-            style={{ background: s.bg, color: s.text }}
-          >
-            {epic.fields.status.name}
-          </span>
+          {transitions.length > 0 ? (
+            <StatusDropdown
+              currentStatus={currentStatus}
+              style={s}
+              transitions={transitions}
+              disabled={statusSaving}
+              onSelect={(t) => handleStatusChange(t.id)}
+            />
+          ) : (
+            <span
+              className="text-xs px-2.5 py-1 rounded-full font-medium"
+              style={{ background: s.bg, color: s.text }}
+            >
+              {currentStatus}
+            </span>
+          )}
           {epic.fields.assignee && (
             <span className="text-xs" style={{ color: "#78716C" }}>
               Owner: {epic.fields.assignee.displayName}
             </span>
           )}
         </div>
+
+        {statusError && (
+          <p
+            className="text-sm px-3 py-2 rounded-lg"
+            style={{ background: "#FEF2F2", color: "#DC2626" }}
+          >
+            {statusError}
+          </p>
+        )}
 
         {dateError && (
           <p
@@ -263,6 +323,85 @@ export default function ProjectDetailsModal({
         />
       )}
     </ModalShell>
+  )
+}
+
+function StatusDropdown({
+  currentStatus,
+  style,
+  transitions,
+  disabled,
+  onSelect,
+}: {
+  currentStatus: string
+  style: { bg: string; text: string }
+  transitions: JiraTransition[]
+  disabled: boolean
+  onSelect: (transition: JiraTransition) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function onMouseDown(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", onMouseDown)
+    return () => document.removeEventListener("mousedown", onMouseDown)
+  }, [])
+
+  return (
+    <div ref={containerRef} className="relative">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen((o) => !o)}
+        className="flex items-center gap-1 text-xs pl-2.5 pr-2 py-1 rounded-full font-medium transition-opacity"
+        style={{
+          background: style.bg,
+          color: style.text,
+          fontFamily: "'DM Sans', sans-serif",
+          opacity: disabled ? 0.6 : 1,
+          cursor: disabled ? "not-allowed" : "pointer",
+        }}
+      >
+        {currentStatus}
+        <svg
+          width="10"
+          height="6"
+          viewBox="0 0 10 6"
+          fill="none"
+          className="flex-shrink-0"
+          style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
+        >
+          <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+
+      {open && (
+        <div
+          className="absolute z-50 mt-1 rounded-xl overflow-hidden shadow-lg"
+          style={{ border: "1.5px solid #E5E3DC", background: "white", minWidth: "160px" }}
+        >
+          {transitions.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => {
+                setOpen(false)
+                onSelect(t)
+              }}
+              className="w-full text-left px-3 py-2 text-sm transition-colors hover:bg-gray-50"
+              style={{ color: "#2B211D" }}
+            >
+              {t.to.name}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 
