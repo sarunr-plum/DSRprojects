@@ -327,3 +327,11 @@ export async function getCurrentUser(): Promise<JiraUser | null> {
   if (!res.ok) return null
   return res.json() as Promise<JiraUser>
 }
+
+export async function deleteIssue(issueKey: string): Promise<void> {
+  const res = await jiraFetch(`/issue/${issueKey}`, { method: "DELETE" })
+  if (!res.ok && res.status !== 204) {
+    const err = await res.text()
+    throw new Error(`Failed to delete issue: ${err}`)
+  }
+}

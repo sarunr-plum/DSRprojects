@@ -379,6 +379,10 @@ export default function BoardPage({
             setEditingIssue(null)
             loadTasks()
           }}
+          onDeleted={() => {
+            setEditingIssue(null)
+            loadTasks()
+          }}
         />
       )}
     </>

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react"
 import { ModalShell } from "./NewTaskModal"
 import {
   updateIssue,
+  deleteIssue,
   getAssignableUsers,
   extractDescription,
   type JiraIssue,
@@ -16,6 +17,7 @@ interface Props {
   epics: JiraEpic[]
   onClose: () => void
   onUpdated: () => void
+  onDeleted?: () => void
 }
 
 export default function EditTaskModal({
@@ -23,9 +25,12 @@ export default function EditTaskModal({
   epics,
   onClose,
   onUpdated,
+  onDeleted,
 }: Props) {
   const [users, setUsers] = useState<JiraUser[]>([])
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const [error, setError] = useState("")
 
   const [form, setForm] = useState({
@@ -50,6 +55,19 @@ export default function EditTaskModal({
 
   function set(key: keyof typeof form, value: string) {
     setForm((f) => ({ ...f, [key]: value }))
+  }
+
+  async function handleDelete() {
+    setDeleting(true)
+    setError("")
+    try {
+      await deleteIssue(issue.key)
+      onDeleted ? onDeleted() : onUpdated()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete task")
+      setDeleting(false)
+      setConfirmDelete(false)
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -179,7 +197,20 @@ export default function EditTaskModal({
           </Field>
         </div>
 
-        <div className="flex gap-2 pt-2">
+        <div className="flex items-center gap-2 pt-2">
+          {/* Delete button */}
+          <button
+            type="button"
+            onClick={() => setConfirmDelete(true)}
+            className="flex items-center justify-center w-9 h-9 rounded-full flex-shrink-0 transition-colors hover:bg-red-50"
+            style={{ border: "1.5px solid #FECACA", color: "#DC2626" }}
+            title="Delete task"
+          >
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+              <path d="M5.5 1.5h4M2 3.5h11M4 3.5l.7 8.5a1 1 0 001 .9h3.6a1 1 0 001-.9L11 3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+
           <button type="button" onClick={onClose} className="btn-ghost flex-1">
             Cancel
           </button>
@@ -191,6 +222,50 @@ export default function EditTaskModal({
             {saving ? "Saving…" : "Save changes"}
           </button>
         </div>
+
+        {/* Delete confirmation */}
+        {confirmDelete && (
+          <div
+            className="fixed inset-0 z-[60] flex items-center justify-center"
+            style={{ background: "rgba(31,36,48,0.55)", backdropFilter: "blur(4px)" }}
+          >
+            <div
+              className="bg-white rounded-2xl shadow-2xl p-6 mx-4 max-w-sm w-full"
+              style={{ border: "1px solid #E5E3DC" }}
+            >
+              <div className="flex items-center justify-center w-11 h-11 rounded-full mx-auto mb-4" style={{ background: "#FEF2F2" }}>
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path d="M10 7v4M10 13h.01M9 2.5l-7 12A1 1 0 003 16h14a1 1 0 00.87-1.5l-7-12a1 1 0 00-1.74 0z" stroke="#DC2626" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <h3 className="text-base font-semibold text-center mb-1" style={{ fontFamily: "'DM Sans', sans-serif", color: "#2B211D" }}>
+                Delete this task?
+              </h3>
+              <p className="text-sm text-center mb-5" style={{ color: "#78716C" }}>
+                <span style={{ fontFamily: "JetBrains Mono, monospace" }}>{issue.key}</span> will be permanently deleted from Jira. This cannot be undone.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete(false)}
+                  disabled={deleting}
+                  className="btn-ghost flex-1"
+                >
+                  Keep it
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="flex-1 px-4 py-2.5 rounded-full text-sm font-medium text-white transition-opacity disabled:opacity-50"
+                  style={{ background: "#DC2626", fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  {deleting ? "Deleting…" : "Yes, delete"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </form>
     </ModalShell>
   )
