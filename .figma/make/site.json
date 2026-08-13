@@ -1,0 +1,11 @@
+{
+  "title": "roastroom",
+  "description": "Streamline project planning by enabling users to review tools and communicate needs efficiently for tailored development and collaboration.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

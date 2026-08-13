@@ -1,0 +1,70 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+@import 'tailwindcss';
+
+@theme {
+  --color-bg: #FAF6F0;
+  --color-ink: #2B211D;
+  --color-muted: #78716C;
+  --color-card: #FFFFFF;
+  --color-border: #E5E3DC;
+  --color-primary: #571541;
+  --color-primary-hover: #430F32;
+  --color-primary-light: #F5E9EF;
+
+  --font-display: 'DM Sans', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'DM Sans', sans-serif;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  background-color: #FAF6F0;
+  color: #2B211D;
+  font-family: 'DM Sans', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #E5E3DC transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #E5E3DC;
+  border-radius: 99px;
+}
+
+.font-display {
+  font-family: 'DM Sans', sans-serif;
+}
+
+.font-mono-key {
+  font-family: 'DM Sans', sans-serif;
+}
+
+@keyframes card-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.task-card-enter {
+  animation: card-pop-in 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
