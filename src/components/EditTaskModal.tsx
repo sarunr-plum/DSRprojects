@@ -242,7 +242,7 @@ export default function EditTaskModal({
                 Delete this task?
               </h3>
               <p className="text-sm text-center mb-5" style={{ color: "#78716C" }}>
-                <span style={{ fontFamily: "JetBrains Mono, monospace" }}>{issue.key}</span> will be permanently deleted from Jira. This cannot be undone.
+                <span style={{ fontFamily: "'DM Sans', sans-serif" }}>{issue.key}</span> will be permanently deleted from Jira. This cannot be undone.
               </p>
               <div className="flex gap-2">
                 <button
