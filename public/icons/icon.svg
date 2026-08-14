@@ -1,8 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- Sparkle mark. Keep the path in sync with SPARKLE_D in src/components/Logo.tsx -->
   <rect width="512" height="512" rx="112" fill="#F8F4EA"/>
-  <g fill="#14100D">
-    <path d="M0.813 3.904 L0 6.75 l-0.813 -2.846 a4.5 4.5 0 0 0 -3.09 -3.09 L-6.75 0 l2.846 -0.813 a4.5 4.5 0 0 0 3.09 -3.09 L0 -6.75 l0.813 2.846 a4.5 4.5 0 0 0 3.09 3.09 L6.75 0 l-2.846 0.813 a4.5 4.5 0 0 0 -3.09 3.09 Z" transform="translate(208,320) scale(20.4)"/>
-    <path d="M0.813 3.904 L0 6.75 l-0.813 -2.846 a4.5 4.5 0 0 0 -3.09 -3.09 L-6.75 0 l2.846 -0.813 a4.5 4.5 0 0 0 3.09 -3.09 L0 -6.75 l0.813 2.846 a4.5 4.5 0 0 0 3.09 3.09 L6.75 0 l-2.846 0.813 a4.5 4.5 0 0 0 -3.09 3.09 Z" transform="translate(344,184) scale(12)"/>
-  </g>
+  <!-- Large sparkle centred at 220,290 -->
+  <path d="M220 118 L237 228 A18 18 0 0 1 255 246 L365 263 L255 280 A18 18 0 0 1 237 298 L220 408 L203 298 A18 18 0 0 1 185 280 L75 263 L185 246 A18 18 0 0 1 203 228 Z" fill="#14100D"/>
+  <!-- Small sparkle upper-right -->
+  <path d="M350 110 L358 164 A10 10 0 0 1 368 174 L422 182 L368 190 A10 10 0 0 1 358 200 L350 254 L342 200 A10 10 0 0 1 332 190 L278 182 L332 174 A10 10 0 0 1 342 164 Z" fill="#14100D" opacity="0.55"/>
 </svg>
