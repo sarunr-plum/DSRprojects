@@ -146,6 +146,7 @@ body {
 .btn-primary {
   padding: 0.65rem 1.35rem;
   border-radius: 999px;
+  border: none;
   background: var(--accent);
   color: #fff;
   font-size: 0.875rem;
@@ -234,6 +235,7 @@ body {
 }
 .seg-item {
   border-radius: 999px;
+  border: none;
   font-family: 'DM Sans', sans-serif;
   cursor: pointer;
   color: var(--ink-soft);
