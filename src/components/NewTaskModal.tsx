@@ -13,6 +13,44 @@ import {
 import { getVisibleEpicKeys } from "../lib/storage"
 import SearchableSelect, { type SelectOption } from "./SearchableSelect"
 
+// Local calendar date as "YYYY-MM-DD" — matches <input type="date">'s value
+// format. Avoids toISOString(), which converts to UTC and can shift the day.
+function toDateInputValue(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, "0")
+  const day = String(d.getDate()).padStart(2, "0")
+  return `${y}-${m}-${day}`
+}
+
+function addDays(d: Date, days: number): Date {
+  const next = new Date(d)
+  next.setDate(next.getDate() + days)
+  return next
+}
+
+function formatDueDatePreview(value: string): string {
+  const [y, m, d] = value.split("-").map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString("en-GB", { day: "numeric", month: "short" })
+}
+
+// Friday of the calendar week containing `d` (Mon–Sun week) — always "this
+// week's Friday", even if that's earlier than `d` (e.g. d is a Saturday).
+function fridayOfWeek(d: Date): Date {
+  const daysSinceMonday = (d.getDay() + 6) % 7 // Mon = 0 ... Sun = 6
+  return addDays(d, 4 - daysSinceMonday)
+}
+
+function quickDueDates() {
+  const today = new Date()
+  const thisFriday = fridayOfWeek(today)
+  return {
+    today: toDateInputValue(today),
+    tomorrow: toDateInputValue(addDays(today, 1)),
+    thisWeek: toDateInputValue(thisFriday),
+    nextWeek: toDateInputValue(addDays(thisFriday, 7)),
+  }
+}
+
 interface Props {
   defaultColumnId: ColumnId
   defaultAssigneeName?: string
@@ -145,6 +183,7 @@ export default function NewTaskModal({
       : []),
     ...otherPeople.map((u) => ({ value: u.accountId, label: u.displayName })),
   ]
+  const quickDates = quickDueDates()
 
   return (
     <ModalShell title="New task" onClose={onClose}>
@@ -190,31 +229,6 @@ export default function NewTaskModal({
             />
           </Field>
 
-          <Field label="Type">
-            <select
-              value={form.issuetype}
-              onChange={(e) => set("issuetype", e.target.value)}
-              className="field-input"
-            >
-              <option>Task</option>
-              <option>Story</option>
-              <option>Bug</option>
-            </select>
-          </Field>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Assignee">
-            <SearchableSelect
-              options={assigneeOptions}
-              value={form.assigneeAccountId}
-              onChange={(v) => set("assigneeAccountId", v)}
-              onSearch={searchAssignees}
-              placeholder="Search people…"
-              emptyLabel="Unassigned"
-            />
-          </Field>
-
           <Field label="Status">
             <select
               value={form.status}
@@ -230,13 +244,56 @@ export default function NewTaskModal({
           </Field>
         </div>
 
-        <Field label="Due Date">
-          <input
-            type="date"
-            value={form.dueDate}
-            onChange={(e) => set("dueDate", e.target.value)}
-            className="field-input"
+        <Field label="Assignee">
+          <SearchableSelect
+            options={assigneeOptions}
+            value={form.assigneeAccountId}
+            onChange={(v) => set("assigneeAccountId", v)}
+            onSearch={searchAssignees}
+            placeholder="Search people…"
+            emptyLabel="Unassigned"
           />
+        </Field>
+
+        <Field
+          label="Due Date"
+          labelRight={form.dueDate ? formatDueDatePreview(form.dueDate) : undefined}
+        >
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {(
+              [
+                ["Today", quickDates.today],
+                ["Tomorrow", quickDates.tomorrow],
+                ["This week", quickDates.thisWeek],
+                ["Next week", quickDates.nextWeek],
+              ] as const
+            ).map(([label, value]) => (
+              <button
+                key={label}
+                type="button"
+                onClick={() => set("dueDate", value)}
+                className="t-meta px-3 py-1.5 rounded-full transition-colors flex-shrink-0"
+                style={{
+                  background: form.dueDate === value ? "var(--accent)" : "var(--track)",
+                  color: form.dueDate === value ? "#fff" : "var(--ink-soft)",
+                }}
+              >
+                {label}
+              </button>
+            ))}
+            <input
+              type="date"
+              value={form.dueDate}
+              onChange={(e) => set("dueDate", e.target.value)}
+              className="t-meta px-3 py-1.5 rounded-full flex-shrink-0"
+              style={{
+                background: "var(--track)",
+                color: "var(--ink-soft)",
+                border: "none",
+                outline: "none",
+              }}
+            />
+          </div>
         </Field>
 
         <div className="flex gap-2 pt-2">
@@ -259,18 +316,27 @@ export default function NewTaskModal({
 function Field({
   label,
   required,
+  labelRight,
   children,
 }: {
   label: string
   required?: boolean
+  labelRight?: React.ReactNode
   children: React.ReactNode
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="t-meta" style={{ color: "var(--ink-soft)" }}>
-        {label}
-        {required && <span style={{ color: "var(--danger)" }}> *</span>}
-      </label>
+      <div className="flex items-center justify-between gap-2">
+        <label className="t-meta" style={{ color: "var(--ink-soft)" }}>
+          {label}
+          {required && <span style={{ color: "var(--danger)" }}> *</span>}
+        </label>
+        {labelRight && (
+          <span className="text-xs" style={{ color: "var(--ink-faint)" }}>
+            {labelRight}
+          </span>
+        )}
+      </div>
       {children}
     </div>
   )

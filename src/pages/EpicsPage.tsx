@@ -1,6 +1,12 @@
-import { useState, useEffect, useCallback, useMemo } from "react"
-import { getEpics, type JiraEpic } from "../lib/jira"
-import { getEpicVisibility, setEpicVisible } from "../lib/storage"
+import { useState, useEffect, useCallback, useMemo, useRef } from "react"
+import { getEpics, getCurrentUser, type JiraEpic } from "../lib/jira"
+import {
+  getEpicVisibility,
+  setEpicVisible,
+  getEpicFilters,
+  setEpicFilters,
+  hasStoredEpicFilters,
+} from "../lib/storage"
 import ProjectTimeline from "../components/ProjectTimeline"
 import ProjectDetailsModal from "../components/ProjectDetailsModal"
 import MultiSelectFilter from "../components/MultiSelectFilter"
@@ -34,10 +40,33 @@ export default function EpicsPage({ onRegisterRefresh }: Props) {
   const [visibility, setVisibility] = useState<Record<string, boolean>>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
-  const [filterStatus, setFilterStatus] = useState<string[]>([])
-  const [filterAssignee, setFilterAssignee] = useState<string[]>([])
+  const [filterStatus, setFilterStatus] = useState<string[]>(
+    () => getEpicFilters().status,
+  )
+  const [filterAssignee, setFilterAssignee] = useState<string[]>(
+    () => getEpicFilters().assignee,
+  )
   const [view, setView] = useState<ViewMode>("list")
   const [selectedEpic, setSelectedEpic] = useState<JiraEpic | null>(null)
+  const [currentUserName, setCurrentUserName] = useState<string | null>(null)
+  const [userResolved, setUserResolved] = useState(false)
+  const defaultAssigneeApplied = useRef(false)
+  // Captured once, before this session writes anything — tells the
+  // first-run-default effect whether the user already has saved filters.
+  const hadStoredFilters = useRef(hasStoredEpicFilters())
+
+  // Persist on every change (including a manual "Clear filters") so filters
+  // survive switching tabs and reloading, until the user changes them again.
+  useEffect(() => {
+    setEpicFilters({ status: filterStatus, assignee: filterAssignee })
+  }, [filterStatus, filterAssignee])
+
+  useEffect(() => {
+    getCurrentUser()
+      .then((u) => setCurrentUserName(u?.displayName ?? null))
+      .catch(() => setCurrentUserName(null))
+      .finally(() => setUserResolved(true))
+  }, [])
 
   const loadEpics = useCallback(async () => {
     setLoading(true)
@@ -139,6 +168,20 @@ export default function EpicsPage({ onRegisterRefresh }: Props) {
     [epics],
   )
 
+  // Default the assignee filter to the logged-in user, once, the first time
+  // their name actually shows up among the loaded epics' assignees — but only
+  // on a genuinely first-ever run. If filters were already saved (even
+  // cleared to empty), respect them instead of overriding.
+  useEffect(() => {
+    if (defaultAssigneeApplied.current) return
+    if (!userResolved || assigneeOptions.length === 0) return
+    defaultAssigneeApplied.current = true
+    if (hadStoredFilters.current) return
+    if (currentUserName && assigneeOptions.includes(currentUserName)) {
+      setFilterAssignee([currentUserName])
+    }
+  }, [userResolved, assigneeOptions, currentUserName])
+
   const filtered = epics.filter((e) => {
     if (filterStatus.length > 0 && !filterStatus.includes(e.fields.status.name))
       return false
@@ -154,16 +197,9 @@ export default function EpicsPage({ onRegisterRefresh }: Props) {
   const enabledCount = Object.values(visibility).filter(Boolean).length
 
   return (
-    <main
-      className={`relative z-10 flex-1 px-4 sm:px-8 py-8 mx-auto w-full ${
-        view === "timeline" ? "max-w-6xl" : "max-w-5xl"
-      }`}
-    >
+    <main className="relative z-10 flex-1 px-4 sm:px-8 lg:px-12 py-8 mx-auto w-full max-w-6xl">
       {!loading && epics.length > 0 && (
-        <div
-          className="flex items-end justify-between gap-4 mb-6 pb-4 rise-in"
-          style={{ borderBottom: "1.5px solid var(--ink)" }}
-        >
+        <div className="flex items-end justify-between gap-4 mb-6 pb-4 rise-in">
           <h2 className="t-display text-[clamp(1.75rem,5vw,2.75rem)]" style={{ color: "var(--ink)" }}>
             Projects
           </h2>
@@ -265,6 +301,7 @@ export default function EpicsPage({ onRegisterRefresh }: Props) {
       {!loading && filtered.length > 0 && view === "timeline" && (
         <ProjectTimeline
           projects={filtered}
+          visibility={visibility}
           statusStyle={statusStyle}
           onSelect={setSelectedEpic}
         />

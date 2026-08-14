@@ -52,8 +52,7 @@ export default function MultiSelectFilter({
         onClick={() => setOpen((o) => !o)}
         className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full transition-colors"
         style={{
-          border: `1.5px solid ${selected.length > 0 ? "var(--accent)" : "var(--line)"}`,
-          background: selected.length > 0 ? "var(--accent-wash)" : "var(--surface)",
+          background: selected.length > 0 ? "var(--accent-wash)" : "var(--track)",
           color: selected.length > 0 ? "var(--accent)" : "var(--ink)",
         }}
       >

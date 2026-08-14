@@ -31,12 +31,12 @@
   --line-soft:     #EDE8DC;
   --grid:          #E2DCCE;   /* backdrop graph-paper */
 
-  /* Accent — the one loud colour */
-  --accent:        #DD4B32;
-  --accent-press:  #BC3B24;
-  --accent-wash:   #FBEBE6;
-  --accent-line:   #F3C7BB;
-  --accent-rgb:    221 75 50;
+  /* Accent — primary colour is black (== ink) */
+  --accent:        #14100D;
+  --accent-press:  #33291F;
+  --accent-wash:   #ECE8DE;
+  --accent-line:   #D6D0C2;
+  --accent-rgb:    20 16 13;
 
   /* Semantic */
   --ok:            #2E7D5B;
@@ -126,19 +126,18 @@ body {
    COMPONENT PRIMITIVES
    ============================================================ */
 
-/* Card — crisp hairline, no mushy shadow */
+/* Card — borderless, definition comes from fill + shadow only */
 .card {
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: none;
   border-radius: var(--r-lg);
-  transition: border-color var(--t) var(--ease), transform var(--t) var(--ease),
-              box-shadow var(--t) var(--ease);
+  box-shadow: 0 1px 2px rgb(var(--ink-rgb) / 0.05);
+  transition: transform var(--t) var(--ease), box-shadow var(--t) var(--ease);
 }
 .card-interactive { cursor: pointer; }
 .card-interactive:hover {
-  border-color: var(--ink);
   transform: translateY(-2px);
-  box-shadow: 0 6px 0 -3px rgb(var(--ink-rgb) / 0.08);
+  box-shadow: 0 10px 20px -8px rgb(var(--ink-rgb) / 0.16);
 }
 .card-interactive:active { transform: translateY(0); }
 

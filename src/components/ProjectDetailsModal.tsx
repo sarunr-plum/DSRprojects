@@ -9,7 +9,6 @@ import {
   type JiraIssue,
   type JiraTransition,
 } from "../lib/jira"
-import { cheer } from "../lib/mood"
 
 interface Props {
   epic: JiraEpic
@@ -80,7 +79,6 @@ export default function ProjectDetailsModal({
     setStatusError("")
     try {
       await applyTransition(epic.key, transition.id)
-      cheer(transition.to.name === "Done" ? "confetti" : "thumbsup")
       onStatusChanged(epic.key, { id: transition.to.id, name: transition.to.name })
       getTransitions(epic.key)
         .then(setTransitions)
@@ -145,7 +143,6 @@ export default function ProjectDetailsModal({
         fontFamily: "'DM Sans', sans-serif",
         color: "var(--accent)",
         background: "var(--accent-wash)",
-        border: "1px solid var(--accent-line)",
         textDecoration: "none",
       }}
     >
@@ -320,7 +317,6 @@ export default function ProjectDetailsModal({
           onClose={() => setAddingTask(false)}
           onCreated={(issue) => {
             setAddingTask(false)
-            cheer("sparkle")
             setTasks((prev) => [issue, ...prev])
           }}
         />

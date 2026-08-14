@@ -16,10 +16,9 @@ export default function GridPaper() {
         `,
         backgroundSize: "28px 28px, 28px 28px, 140px 140px, 140px 140px",
         opacity: 0.5,
-        maskImage:
-          "radial-gradient(ellipse 120% 90% at 50% 0%, black 30%, transparent 88%)",
-        WebkitMaskImage:
-          "radial-gradient(ellipse 120% 90% at 50% 0%, black 30%, transparent 88%)",
+        // Fades in from top, fully visible by the lower half of the viewport.
+        maskImage: "linear-gradient(to bottom, transparent 0%, black 65%)",
+        WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 65%)",
       }}
     />
   )

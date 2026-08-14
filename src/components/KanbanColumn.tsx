@@ -54,8 +54,8 @@ export default function KanbanColumn({
           onKeyDown={(e) => e.key === "Enter" && setCollapsed(false)}
           className="card card-interactive flex flex-col items-center gap-3 py-4"
           style={{
-            borderColor: isOver ? "var(--accent)" : "var(--line)",
             background: isOver ? "rgb(var(--accent-rgb) / 0.07)" : "var(--surface)",
+            boxShadow: isOver ? "0 0 0 2px var(--accent)" : undefined,
           }}
           title={`Expand ${label}`}
         >
@@ -87,12 +87,9 @@ export default function KanbanColumn({
   }
 
   return (
-    <div className="flex flex-col flex-shrink-0 w-72 sm:w-80">
+    <div className="flex flex-col flex-shrink-0 w-[19.8rem] sm:w-[22rem]">
       {/* Column header */}
-      <div
-        className="flex items-center justify-between mb-4 pb-2.5"
-        style={{ borderBottom: "1.5px solid var(--ink)" }}
-      >
+      <div className="flex items-center justify-between mb-4 pb-2.5">
         <div className="flex items-center gap-2 min-w-0">
           <span
             className="w-2.5 h-2.5 rounded-full flex-shrink-0"

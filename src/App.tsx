@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from "react"
 import { handleCallback, isAuthenticated, logout } from "./lib/auth"
 import { getEpics, type JiraEpic } from "./lib/jira"
 import { initDefaultVisibility } from "./lib/storage"
-import { cheer } from "./lib/mood"
 import LoginPage from "./pages/LoginPage"
 import BoardPage from "./pages/BoardPage"
 import EpicsPage from "./pages/EpicsPage"
@@ -29,7 +28,6 @@ export default function App() {
     initDefaultVisibility(fetchedEpics)
     setEpics(fetchedEpics)
     setPage("app")
-    window.setTimeout(() => cheer("wave"), 400)
   }
 
   useEffect(() => {

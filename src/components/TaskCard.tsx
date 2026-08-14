@@ -68,7 +68,8 @@ export default function TaskCard({ issue, onEdit, isNew }: Props) {
           target="_blank"
           rel="noopener noreferrer"
           onClick={(e) => e.stopPropagation()}
-          className="link"
+          className="hover:underline"
+          style={{ color: "var(--ink)" }}
         >
           {issue.key}
         </a>

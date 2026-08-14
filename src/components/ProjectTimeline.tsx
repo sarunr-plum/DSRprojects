@@ -5,6 +5,7 @@ type Zoom = "days" | "weeks" | "months"
 
 interface Props {
   projects: JiraEpic[]
+  visibility: Record<string, boolean>
   statusStyle: (name: string) => { bg: string; text: string }
   onSelect: (epic: JiraEpic) => void
 }
@@ -12,6 +13,8 @@ interface Props {
 const PX_PER_DAY: Record<Zoom, number> = { days: 36, weeks: 14, months: 4.6 }
 const ZOOMS: Zoom[] = ["days", "weeks", "months"]
 const ROW_HEIGHT = 48
+const UNIT_ROW_HEIGHT = 44
+const GROUP_ROW_HEIGHT = 24
 
 function startOfDay(d: Date): Date {
   const x = new Date(d)
@@ -39,17 +42,24 @@ function startOfWeek(d: Date): Date {
 
 export default function ProjectTimeline({
   projects,
+  visibility,
   statusStyle,
   onSelect,
 }: Props) {
   const [zoom, setZoom] = useState<Zoom>("weeks")
+  const [onlyEnabled, setOnlyEnabled] = useState(true)
   const scrollRef = useRef<HTMLDivElement>(null)
   const pxPerDay = PX_PER_DAY[zoom]
   const today = useMemo(() => startOfDay(new Date()), [])
 
+  const visibleProjects = useMemo(
+    () => (onlyEnabled ? projects.filter((p) => visibility[p.key]) : projects),
+    [projects, visibility, onlyEnabled],
+  )
+
   const { rangeStart, rangeEnd } = useMemo(() => {
     const dates: Date[] = []
-    projects.forEach((p) => {
+    visibleProjects.forEach((p) => {
       const s = p.fields.startDate
       const d = p.fields.duedate
       if (s) dates.push(new Date(s))
@@ -66,7 +76,7 @@ export default function ProjectTimeline({
     if (today < start) start = addDays(today, -14)
     if (today > end) end = addDays(today, 14)
     return { rangeStart: startOfDay(start), rangeEnd: startOfDay(end) }
-  }, [projects, today])
+  }, [visibleProjects, today])
 
   const totalDays = Math.max(daysBetween(rangeStart, rangeEnd), 1)
   const totalWidth = totalDays * pxPerDay
@@ -139,32 +149,64 @@ export default function ProjectTimeline({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [zoom])
 
-  const headerHeight = groupHeader ? 24 + 33 : 33
+  const headerHeight = groupHeader ? GROUP_ROW_HEIGHT + UNIT_ROW_HEIGHT : UNIT_ROW_HEIGHT
 
   return (
     <div
       className="rise-in overflow-hidden"
       style={{
-        border: "1.5px solid var(--ink)",
         borderRadius: "var(--r-lg)",
         background: "var(--surface)",
+        boxShadow: "0 1px 2px rgb(var(--ink-rgb) / 0.05)",
       }}
     >
       {/* Toolbar */}
       <div
-        className="flex items-center justify-between px-4 py-3"
-        style={{ borderBottom: "1.5px solid var(--ink)" }}
+        className="flex items-center justify-between gap-3 px-4 py-3"
+        style={{ borderBottom: "1px solid var(--line-soft)" }}
       >
-        <button
-          onClick={() => jumpToToday()}
-          className="t-meta px-3.5 py-1.5 rounded-full transition-all active:scale-95"
-          style={{
-            color: "var(--surface)",
-            background: "var(--ink)",
-          }}
-        >
-          Today
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => jumpToToday()}
+            className="t-meta px-3.5 py-1.5 rounded-full transition-all active:scale-95"
+            style={{
+              color: "var(--surface)",
+              background: "var(--ink)",
+            }}
+          >
+            Today
+          </button>
+          <label className="flex items-center gap-1.5 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={onlyEnabled}
+              onChange={(e) => setOnlyEnabled(e.target.checked)}
+              className="sr-only"
+            />
+            <span
+              className="flex-shrink-0 w-4 h-4 rounded flex items-center justify-center transition-colors"
+              style={{
+                border: `1.5px solid ${onlyEnabled ? "var(--accent)" : "var(--line)"}`,
+                background: onlyEnabled ? "var(--accent)" : "transparent",
+              }}
+            >
+              {onlyEnabled && (
+                <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                  <path
+                    d="M1 4l3 3 5-6"
+                    stroke="#fff"
+                    strokeWidth="1.75"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              )}
+            </span>
+            <span className="t-meta" style={{ color: "var(--ink-soft)" }}>
+              See only enabled
+            </span>
+          </label>
+        </div>
         <div className="seg">
           {ZOOMS.map((z) => (
             <button
@@ -178,9 +220,11 @@ export default function ProjectTimeline({
         </div>
       </div>
 
-      {projects.length === 0 ? (
+      {visibleProjects.length === 0 ? (
         <div className="py-16 text-center text-sm" style={{ color: "var(--ink-faint)" }}>
-          No projects to show.
+          {onlyEnabled && projects.length > 0
+            ? "No enabled projects to show — toggle some on in List view, or turn off “See only enabled”."
+            : "No projects to show."}
         </div>
       ) : (
         <div className="flex">
@@ -195,7 +239,7 @@ export default function ProjectTimeline({
                 borderBottom: "1px solid var(--line-soft)",
               }}
             />
-            {projects.map((p) => (
+            {visibleProjects.map((p) => (
               <button
                 key={p.key}
                 onClick={() => onSelect(p)}
@@ -216,17 +260,20 @@ export default function ProjectTimeline({
           </div>
 
           {/* Scrollable timeline */}
-          <div ref={scrollRef} className="flex-1 overflow-x-auto">
+          <div ref={scrollRef} className="flex-1 overflow-x-auto no-bar">
             <div style={{ width: totalWidth, position: "relative" }}>
               {groupHeader && (
                 <div
                   className="flex"
-                  style={{ borderBottom: "1px solid var(--line-soft)", height: "24px" }}
+                  style={{
+                    borderBottom: "1px solid var(--line-soft)",
+                    height: GROUP_ROW_HEIGHT,
+                  }}
                 >
                   {groupHeader.map((g, i) => (
                     <div
                       key={i}
-                      className="text-xs font-medium flex items-center px-2 truncate flex-shrink-0"
+                      className="text-xs font-medium flex items-center justify-center px-2 truncate flex-shrink-0"
                       style={{
                         width: g.widthDays * pxPerDay,
                         color: "var(--ink-soft)",
@@ -241,7 +288,10 @@ export default function ProjectTimeline({
 
               <div
                 className="flex"
-                style={{ borderBottom: "1px solid var(--line-soft)", height: "33px" }}
+                style={{
+                  borderBottom: "1px solid var(--line-soft)",
+                  height: UNIT_ROW_HEIGHT,
+                }}
               >
                 {columns.map((c, i) => (
                   <div
@@ -265,15 +315,15 @@ export default function ProjectTimeline({
                   top: 0,
                   bottom: 0,
                   left: todayLeft,
-                  width: "2px",
-                  background: "var(--accent)",
+                  width: 0,
+                  borderLeft: "2.5px dotted var(--danger)",
                   zIndex: 5,
                   pointerEvents: "none",
                 }}
               />
 
               {/* Rows */}
-              {projects.map((p) => {
+              {visibleProjects.map((p) => {
                 const s = p.fields.startDate
                   ? new Date(p.fields.startDate)
                   : null
@@ -283,7 +333,7 @@ export default function ProjectTimeline({
                   <button
                     key={p.key}
                     onClick={() => onSelect(p)}
-                    className="relative w-full text-left transition-colors hover:bg-[var(--surface-sunk)]"
+                    className="relative block w-full text-left transition-colors hover:bg-[var(--surface-sunk)]"
                     style={{
                       height: ROW_HEIGHT,
                       borderBottom: "1px solid var(--line-soft)",
@@ -299,7 +349,6 @@ export default function ProjectTimeline({
                           height: "20px",
                           background: st.bg,
                           color: st.text,
-                          border: `1px solid ${st.text}33`,
                         }}
                       >
                         {p.key}

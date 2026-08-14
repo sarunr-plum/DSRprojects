@@ -109,7 +109,6 @@ export default function EditTaskModal({
         fontFamily: "'DM Sans', sans-serif",
         color: "var(--accent)",
         background: "var(--accent-wash)",
-        border: "1px solid var(--accent-line)",
         textDecoration: "none",
       }}
     >

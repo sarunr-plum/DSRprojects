@@ -42,7 +42,7 @@ function DevTokenInjector({ onLoggedIn }: { onLoggedIn?: () => void }) {
   return (
     <div
       className="mt-6 rounded-2xl overflow-hidden"
-      style={{ border: "1.5px dashed var(--accent-line)", background: "var(--accent-wash)" }}
+      style={{ border: "1.5px dashed var(--accent-line)" }}
     >
       <button
         onClick={() => setOpen((o) => !o)}
@@ -145,7 +145,6 @@ export default function LoginPage({
 }) {
   const [loading, setLoading] = useState(false)
   const missingConfig = !ATLASSIAN_CLIENT_ID
-  const isDev = import.meta.env.DEV
 
   async function handleLogin() {
     setLoading(true)
@@ -167,10 +166,10 @@ export default function LoginPage({
         </div>
 
         <h1
-          className="t-display text-center text-[clamp(2.25rem,7vw,3.25rem)] mb-3"
+          className="t-display normal-case text-center text-[clamp(1.75rem,6vw,3.25rem)] mb-3 whitespace-nowrap"
           style={{ color: "var(--ink)" }}
         >
-          Design &amp;<br />Research
+          Design &amp; Research
         </h1>
         <p
           className="text-center text-base mb-9 mx-auto max-w-xs"
@@ -179,15 +178,7 @@ export default function LoginPage({
           Your team&#39;s Jira board — without the wait.
         </p>
 
-        <div
-          className="p-8"
-          style={{
-            background: "var(--surface)",
-            border: "1.5px solid var(--ink)",
-            borderRadius: "var(--r-xl)",
-          }}
-        >
-
+        <div>
           {error && (
             <div
               className="mb-4 px-4 py-3 rounded-xl text-sm"
@@ -241,12 +232,12 @@ export default function LoginPage({
             <button
               onClick={handleLogin}
               disabled={loading}
-              className="btn-primary w-full flex items-center justify-center gap-3 py-3.5 text-[15px]"
+              className="btn-primary w-full flex items-center justify-center gap-3 py-7 text-lg"
             >
               {loading ? (
                 <>
                   <svg
-                    className="animate-spin w-4 h-4"
+                    className="animate-spin w-5 h-5"
                     viewBox="0 0 24 24"
                     fill="none"
                   >
@@ -270,7 +261,7 @@ export default function LoginPage({
                 <>
                   <svg
                     viewBox="0 0 24 24"
-                    className="w-4 h-4"
+                    className="w-5 h-5"
                     fill="currentColor"
                   >
                     <path d="M12.006 2c-5.522 0-9.994 4.478-9.994 10s4.472 10 9.994 10c5.523 0 9.994-4.478 9.994-10S17.529 2 12.006 2zm0 18c-4.419 0-8-3.581-8-8s3.581-8 8-8 8 3.581 8 8-3.581 8-8 8zm3.546-11.561l-4.8 4.8-1.8-1.8a.999.999 0 10-1.414 1.414l2.507 2.507a1 1 0 001.414 0l5.507-5.507a1 1 0 00-1.414-1.414z" />
@@ -288,7 +279,7 @@ export default function LoginPage({
           No shared tokens.
         </p>
 
-        {isDev && <DevTokenInjector onLoggedIn={onLoggedIn} />}
+        <DevTokenInjector onLoggedIn={onLoggedIn} />
       </div>
     </div>
   )
