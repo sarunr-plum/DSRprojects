@@ -283,7 +283,7 @@ export default function BoardPage({
 
         {/* Loading skeletons */}
         {loading && (
-          <div className="flex gap-4 overflow-hidden w-fit mx-auto">
+          <div className="flex gap-7 overflow-hidden w-fit mx-auto">
             {COLUMNS.map((col) => (
               <div key={col.id} className="flex-shrink-0 w-[19.8rem] sm:w-[22rem]">
                 <div className="flex items-center gap-2 mb-3 px-1">
@@ -316,7 +316,7 @@ export default function BoardPage({
             onDragCancel={() => setDraggingIssue(null)}
           >
             <div
-              className="flex gap-4 pb-4 w-fit mx-auto"
+              className="flex gap-7 pb-4 w-fit mx-auto"
               style={{ minWidth: "min-content" }}
             >
               {visibleColumns.map((col) => (

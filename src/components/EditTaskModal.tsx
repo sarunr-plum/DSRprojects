@@ -11,6 +11,7 @@ import {
 } from "../lib/jira"
 import { STATUS_TO_COLUMN, type ColumnId, COLUMNS } from "../lib/constants"
 import SearchableSelect, { type SelectOption } from "./SearchableSelect"
+import DueDateField, { formatDueDatePreview } from "./DueDateField"
 
 interface Props {
   issue: JiraIssue
@@ -92,7 +93,7 @@ export default function EditTaskModal({
 
   const epicOptions: SelectOption[] = epics.map((e) => ({
     value: e.key,
-    label: `${e.key} – ${e.fields.summary}`,
+    label: e.fields.summary,
   }))
   const assigneeOptions: SelectOption[] = users.map((u) => ({
     value: u.accountId,
@@ -148,17 +149,17 @@ export default function EditTaskModal({
           />
         </Field>
 
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Epic">
-            <SearchableSelect
-              options={epicOptions}
-              value={form.epicKey}
-              onChange={(v) => set("epicKey", v)}
-              placeholder="Search epics…"
-              emptyLabel="No epic"
-            />
-          </Field>
+        <Field label="Project">
+          <SearchableSelect
+            options={epicOptions}
+            value={form.epicKey}
+            onChange={(v) => set("epicKey", v)}
+            placeholder="Search projects…"
+            emptyLabel="No project"
+          />
+        </Field>
 
+        <div className="grid grid-cols-2 gap-3">
           <Field label="Assignee">
             <SearchableSelect
               options={assigneeOptions}
@@ -169,14 +170,12 @@ export default function EditTaskModal({
               emptyLabel="Unassigned"
             />
           </Field>
-        </div>
 
-        <div className="grid grid-cols-2 gap-3">
           <Field label="Status">
             <select
               value={form.status}
               onChange={(e) => set("status", e.target.value)}
-              className="field-input"
+              className="field-input field-select"
             >
               {COLUMNS.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -185,16 +184,14 @@ export default function EditTaskModal({
               ))}
             </select>
           </Field>
-
-          <Field label="Due Date">
-            <input
-              type="date"
-              value={form.dueDate}
-              onChange={(e) => set("dueDate", e.target.value)}
-              className="field-input"
-            />
-          </Field>
         </div>
+
+        <Field
+          label="Due Date"
+          labelRight={form.dueDate ? formatDueDatePreview(form.dueDate) : undefined}
+        >
+          <DueDateField value={form.dueDate} onChange={(v) => set("dueDate", v)} />
+        </Field>
 
         <div className="flex items-center gap-2 pt-2">
           {/* Delete button */}
@@ -273,18 +270,27 @@ export default function EditTaskModal({
 function Field({
   label,
   required,
+  labelRight,
   children,
 }: {
   label: string
   required?: boolean
+  labelRight?: React.ReactNode
   children: React.ReactNode
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="t-meta" style={{ color: "var(--ink-soft)" }}>
-        {label}
-        {required && <span style={{ color: "var(--danger)" }}> *</span>}
-      </label>
+      <div className="flex items-center justify-between gap-2">
+        <label className="t-meta" style={{ color: "var(--ink-soft)" }}>
+          {label}
+          {required && <span style={{ color: "var(--danger)" }}> *</span>}
+        </label>
+        {labelRight && (
+          <span className="text-xs" style={{ color: "var(--ink-faint)" }}>
+            {labelRight}
+          </span>
+        )}
+      </div>
       {children}
     </div>
   )

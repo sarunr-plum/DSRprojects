@@ -206,6 +206,24 @@ body {
 .field-input:focus { border-color: var(--accent); background: var(--surface); outline: none; }
 .field-input::placeholder { color: var(--ink-ghost); }
 
+/* Native <select> — replace the browser arrow so left/right padding reads
+   as balanced instead of the built-in arrow eating into the right side. */
+.field-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23A79E92' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.85rem center;
+  padding-right: 2rem;
+}
+
+/* Tighten the gap between a date input's text and its native calendar icon */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  padding: 2px;
+  margin-left: 2px;
+}
+
 /* Link — underline is the De School signature */
 .link {
   color: var(--accent);

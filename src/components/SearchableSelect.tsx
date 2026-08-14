@@ -31,13 +31,19 @@ export default function SearchableSelect({
   const selected = options.find((o) => o.value === value && !o.isDivider)
   // When onSearch is provided, `options` already reflects server-side matches for `query`.
   // Dividers are grouping labels, not real options — they never participate in search.
-  const filtered =
+  const baseOptions =
     !onSearch && query
       ? options.filter(
           (o) =>
             !o.isDivider && o.label.toLowerCase().includes(query.toLowerCase()),
         )
       : options
+  // Outside of an active search, float the current selection to the top so
+  // re-opening the list to change it doesn't require hunting for it.
+  const filtered =
+    !query && selected
+      ? [selected, ...baseOptions.filter((o) => o.value !== selected.value)]
+      : baseOptions
 
   useEffect(() => {
     if (!onSearch) return
@@ -98,7 +104,7 @@ export default function SearchableSelect({
             onKeyDown={handleInputKeyDown}
             placeholder={placeholder}
             className="flex-1 bg-transparent outline-none text-sm"
-            style={{ color: "var(--ink)", fontFamily: "'DM Sans', sans-serif" }}
+            style={{ color: "var(--ink)", fontFamily: "'DM Sans', sans-serif", outline: "none" }}
             onClick={(e) => e.stopPropagation()}
           />
         ) : (
