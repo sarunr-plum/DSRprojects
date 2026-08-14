@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react"
 import NewTaskModal, { ModalShell } from "./NewTaskModal"
+import EditTaskModal from "./EditTaskModal"
 import {
   getTasksForEpics,
   updateEpicDates,
@@ -52,6 +53,13 @@ export default function ProjectDetailsModal({
   const [tasksLoading, setTasksLoading] = useState(true)
   const [tasksError, setTasksError] = useState("")
   const [addingTask, setAddingTask] = useState(false)
+  const [editingTask, setEditingTask] = useState<JiraIssue | null>(null)
+
+  function refetchTasks() {
+    getTasksForEpics([epic.key])
+      .then(setTasks)
+      .catch(() => {})
+  }
 
   useEffect(() => {
     getTasksForEpics([epic.key])
@@ -264,23 +272,28 @@ export default function ProjectDetailsModal({
               {tasks.map((t) => {
                 const ts = statusStyle(t.fields.status.name)
                 return (
-                  <a
+                  <div
                     key={t.key}
-                    href={`https://plumhq.atlassian.net/browse/${t.key}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors hover:bg-[var(--surface-sunk)]"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setEditingTask(t)}
+                    onKeyDown={(e) => e.key === "Enter" && setEditingTask(t)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors hover:bg-[var(--surface-sunk)]"
                     style={{ border: "1px solid var(--line-soft)" }}
                   >
-                    <span
-                      className="text-xs flex-shrink-0"
+                    <a
+                      href={`https://plumhq.atlassian.net/browse/${t.key}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-xs flex-shrink-0 hover:underline"
                       style={{
                         fontFamily: "'DM Sans', sans-serif",
                         color: "var(--ink-faint)",
                       }}
                     >
                       {t.key}
-                    </span>
+                    </a>
                     <span
                       className="text-xs flex-1 truncate"
                       style={{ color: "var(--ink)" }}
@@ -301,7 +314,7 @@ export default function ProjectDetailsModal({
                     >
                       {t.fields.status.name}
                     </span>
-                  </a>
+                  </div>
                 )
               })}
             </div>
@@ -318,6 +331,22 @@ export default function ProjectDetailsModal({
           onCreated={(issue) => {
             setAddingTask(false)
             setTasks((prev) => [issue, ...prev])
+          }}
+        />
+      )}
+
+      {editingTask && (
+        <EditTaskModal
+          issue={editingTask}
+          epics={[epic]}
+          onClose={() => setEditingTask(null)}
+          onUpdated={() => {
+            setEditingTask(null)
+            refetchTasks()
+          }}
+          onDeleted={() => {
+            setEditingTask(null)
+            refetchTasks()
           }}
         />
       )}

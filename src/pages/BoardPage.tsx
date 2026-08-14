@@ -350,6 +350,28 @@ export default function BoardPage({
         )}
       </main>
 
+      {/* Floating add-task CTA */}
+      {!loading && visibleEpicKeys.length > 0 && (
+        <button
+          onClick={() =>
+            setNewTaskConfig({
+              columnId: "todo",
+              assigneeName: activeTab !== "Unassigned" ? activeTab : undefined,
+            })
+          }
+          className="btn-primary fixed z-40 left-1/2 -translate-x-1/2 shadow-lg"
+          style={{
+            bottom: "env(safe-area-inset-bottom, 24px)",
+            marginBottom: "24px",
+            padding: "1rem 2rem",
+            fontSize: "1rem",
+            boxShadow: "0 10px 24px -6px rgb(var(--ink-rgb) / 0.35)",
+          }}
+        >
+          + Add
+        </button>
+      )}
+
       {/* Modals */}
       {newTaskConfig && (
         <NewTaskModal

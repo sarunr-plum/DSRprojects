@@ -10,12 +10,45 @@ import {
 import ProjectTimeline from "../components/ProjectTimeline"
 import ProjectDetailsModal from "../components/ProjectDetailsModal"
 import MultiSelectFilter from "../components/MultiSelectFilter"
+import SortMenu, { type SortOption } from "../components/SortMenu"
 
 interface Props {
   onRegisterRefresh: (fn: () => void) => void
 }
 
 type ViewMode = "list" | "timeline"
+type SortKey = "newest" | "oldest" | "dueDate" | "name"
+
+const SORT_OPTIONS: SortOption<SortKey>[] = [
+  { key: "newest", label: "Newest first" },
+  { key: "oldest", label: "Oldest first" },
+  { key: "dueDate", label: "Due date" },
+  { key: "name", label: "Name A–Z" },
+]
+
+function sortEpics(epics: JiraEpic[], sortKey: SortKey): JiraEpic[] {
+  const arr = [...epics]
+  switch (sortKey) {
+    case "newest":
+      arr.sort((a, b) => (b.fields.created ?? "").localeCompare(a.fields.created ?? ""))
+      break
+    case "oldest":
+      arr.sort((a, b) => (a.fields.created ?? "").localeCompare(b.fields.created ?? ""))
+      break
+    case "dueDate":
+      arr.sort((a, b) => {
+        if (!a.fields.duedate && !b.fields.duedate) return 0
+        if (!a.fields.duedate) return 1
+        if (!b.fields.duedate) return -1
+        return a.fields.duedate.localeCompare(b.fields.duedate)
+      })
+      break
+    case "name":
+      arr.sort((a, b) => a.fields.summary.localeCompare(b.fields.summary))
+      break
+  }
+  return arr
+}
 
 const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
   "In Progress": { bg: "var(--accent-wash)", text: "var(--accent)" },
@@ -47,6 +80,8 @@ export default function EpicsPage({ onRegisterRefresh }: Props) {
     () => getEpicFilters().assignee,
   )
   const [view, setView] = useState<ViewMode>("list")
+  const [sortKey, setSortKey] = useState<SortKey>("newest")
+  const [onlyEnabled, setOnlyEnabled] = useState(true)
   const [selectedEpic, setSelectedEpic] = useState<JiraEpic | null>(null)
   const [currentUserName, setCurrentUserName] = useState<string | null>(null)
   const [userResolved, setUserResolved] = useState(false)
@@ -191,28 +226,36 @@ export default function EpicsPage({ onRegisterRefresh }: Props) {
         !filterAssignee.includes(e.fields.assignee.displayName))
     )
       return false
+    if (onlyEnabled && !visibility[e.key]) return false
     return true
   })
+
+  const sorted = sortEpics(filtered, sortKey)
 
   const enabledCount = Object.values(visibility).filter(Boolean).length
 
   return (
     <main className="relative z-10 flex-1 px-4 sm:px-8 lg:px-12 py-8 mx-auto w-full max-w-6xl">
       {!loading && epics.length > 0 && (
-        <div className="flex items-end justify-between gap-4 mb-6 pb-4 rise-in">
-          <h2 className="t-display text-[clamp(1.75rem,5vw,2.75rem)]" style={{ color: "var(--ink)" }}>
-            Projects
-          </h2>
-          <p className="t-meta pb-1.5" style={{ color: "var(--ink-soft)" }}>
-            {enabledCount} / {epics.length} on board
+        <>
+          <div className="flex items-end justify-between gap-4 mb-1 rise-in">
+            <h2 className="t-display text-[clamp(1.75rem,5vw,2.75rem)]" style={{ color: "var(--ink)" }}>
+              Projects
+            </h2>
+            <p className="t-meta pb-1.5" style={{ color: "var(--ink-soft)" }}>
+              {enabledCount} / {epics.length} on board
+            </p>
+          </div>
+          <p className="text-sm mb-6" style={{ color: "var(--ink-soft)" }}>
+            Switch a project ON to show it in tasks view
           </p>
-        </div>
+        </>
       )}
 
       {/* Filters */}
       {!loading && epics.length > 0 && (
         <div className="flex flex-wrap items-center justify-between gap-2 mb-5">
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <MultiSelectFilter
               label="Status"
               allLabel="All statuses"
@@ -227,6 +270,7 @@ export default function EpicsPage({ onRegisterRefresh }: Props) {
               selected={filterAssignee}
               onChange={setFilterAssignee}
             />
+            <SortMenu value={sortKey} options={SORT_OPTIONS} onChange={setSortKey} />
             {(filterStatus.length > 0 || filterAssignee.length > 0) && (
               <button
                 onClick={() => {
@@ -241,16 +285,49 @@ export default function EpicsPage({ onRegisterRefresh }: Props) {
             )}
           </div>
 
-          <div className="seg flex-shrink-0">
-            {(["list", "timeline"] as ViewMode[]).map((v) => (
-              <button
-                key={v}
-                onClick={() => setView(v)}
-                className={`seg-item t-meta px-4 py-1.5 ${view === v ? "is-on" : ""}`}
+          <div className="flex items-center gap-3 flex-shrink-0">
+            <label className="flex items-center gap-1.5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={onlyEnabled}
+                onChange={(e) => setOnlyEnabled(e.target.checked)}
+                className="sr-only"
+              />
+              <span
+                className="flex-shrink-0 w-4 h-4 rounded flex items-center justify-center transition-colors"
+                style={{
+                  border: `1.5px solid ${onlyEnabled ? "var(--accent)" : "var(--line)"}`,
+                  background: onlyEnabled ? "var(--accent)" : "transparent",
+                }}
               >
-                {v}
-              </button>
-            ))}
+                {onlyEnabled && (
+                  <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                    <path
+                      d="M1 4l3 3 5-6"
+                      stroke="#fff"
+                      strokeWidth="1.75"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                )}
+              </span>
+              <span className="t-meta" style={{ color: "var(--ink-soft)" }}>
+                See only enabled
+              </span>
+            </label>
+
+            <div className="seg">
+              {(["list", "timeline"] as ViewMode[]).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setView(v)}
+                  className={`seg-item t-meta px-4 py-1.5 ${view === v ? "is-on" : ""}`}
+                >
+                  {v}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}
@@ -280,41 +357,38 @@ export default function EpicsPage({ onRegisterRefresh }: Props) {
         </div>
       )}
 
-      {!loading && filtered.length === 0 && !error && (
+      {!loading && sorted.length === 0 && !error && (
         <div className="text-center py-16">
           <p
             className="text-base font-medium mb-1"
             style={{ color: "var(--ink)", fontFamily: "'DM Sans', sans-serif" }}
           >
-            {epics.length === 0
-              ? "No projects found"
-              : "No projects match your filters"}
+            {epics.length === 0 ? "No projects found" : "No projects match your filters"}
           </p>
           <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
             {epics.length === 0
               ? "Make sure your Jira project has at least one Epic."
-              : "Try adjusting the filters above."}
+              : onlyEnabled
+                ? "Toggle some projects on, or turn off “See only enabled”."
+                : "Try adjusting the filters above."}
           </p>
         </div>
       )}
 
-      {!loading && filtered.length > 0 && view === "timeline" && (
+      {!loading && sorted.length > 0 && view === "timeline" && (
         <ProjectTimeline
-          projects={filtered}
-          visibility={visibility}
+          projects={sorted}
           statusStyle={statusStyle}
           onSelect={setSelectedEpic}
         />
       )}
 
-      {!loading && filtered.length > 0 && view === "list" && (
-        <div className="space-y-2.5">
-          <p className="t-meta px-1 mb-4" style={{ color: "var(--ink-faint)" }}>
-            Switch a project on to show its tasks · tap for details · newest
-            first
-          </p>
-
-          {filtered.map((epic, i) => {
+      {!loading && sorted.length > 0 && view === "list" && (
+        <div
+          className="rounded-2xl overflow-hidden rise-in"
+          style={{ background: "var(--surface)", boxShadow: "0 1px 2px rgb(var(--ink-rgb) / 0.05)" }}
+        >
+          {sorted.map((epic, i) => {
             const isVisible = visibility[epic.key] ?? false
             const s = statusStyle(epic.fields.status.name)
 
@@ -325,8 +399,10 @@ export default function EpicsPage({ onRegisterRefresh }: Props) {
                 tabIndex={0}
                 onClick={() => setSelectedEpic(epic)}
                 onKeyDown={(e) => e.key === "Enter" && setSelectedEpic(epic)}
-                className="card card-interactive rise-in flex items-center gap-4 px-5 py-4"
-                style={{ animationDelay: `${Math.min(i, 12) * 28}ms` }}
+                className="flex items-center gap-4 px-5 py-3 cursor-pointer transition-colors hover:bg-[var(--surface-sunk)]"
+                style={{
+                  borderBottom: i < sorted.length - 1 ? "1px solid var(--line-soft)" : undefined,
+                }}
               >
                 {/* Toggle */}
                 <button
@@ -336,13 +412,16 @@ export default function EpicsPage({ onRegisterRefresh }: Props) {
                     e.stopPropagation()
                     toggle(epic.key, !isVisible)
                   }}
-                  className="flex-shrink-0 w-10 h-6 rounded-full transition-colors relative"
+                  className="flex-shrink-0 w-8 h-[18px] rounded-full transition-colors relative"
                   style={{ background: isVisible ? "var(--accent)" : "var(--line)" }}
                 >
                   <span
-                    className="absolute top-1 w-4 h-4 bg-[var(--surface)] rounded-full shadow-sm transition-all"
+                    className="absolute rounded-full bg-[var(--surface)] shadow-sm transition-all"
                     style={{
-                      left: isVisible ? "calc(100% - 1.25rem)" : "0.25rem",
+                      top: "2px",
+                      width: "14px",
+                      height: "14px",
+                      left: isVisible ? "calc(100% - 16px)" : "2px",
                     }}
                   />
                 </button>

@@ -24,7 +24,7 @@ export default function AppHeader({
 
   return (
     <header
-      className="sticky top-0 z-30 px-4 sm:px-8 lg:px-12 py-5"
+      className="sticky top-0 z-30 px-4 sm:px-8 lg:px-12 py-3"
       style={{
         background: "rgb(var(--bg-veil) / 0.86)",
         backdropFilter: "blur(14px)",
@@ -65,6 +65,7 @@ export default function AppHeader({
             title="Refresh"
             aria-label="Refresh"
             className="btn-icon"
+            style={{ border: "none" }}
           >
             <svg
               viewBox="0 0 24 24"
@@ -89,7 +90,7 @@ export default function AppHeader({
             title="Log out"
             aria-label="Log out"
             className="btn-icon"
-            style={{ color: "var(--danger)", borderColor: "var(--danger-line)" }}
+            style={{ border: "none" }}
           >
             <svg
               viewBox="0 0 24 24"

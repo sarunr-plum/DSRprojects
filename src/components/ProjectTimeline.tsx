@@ -5,7 +5,6 @@ type Zoom = "days" | "weeks" | "months"
 
 interface Props {
   projects: JiraEpic[]
-  visibility: Record<string, boolean>
   statusStyle: (name: string) => { bg: string; text: string }
   onSelect: (epic: JiraEpic) => void
 }
@@ -42,24 +41,17 @@ function startOfWeek(d: Date): Date {
 
 export default function ProjectTimeline({
   projects,
-  visibility,
   statusStyle,
   onSelect,
 }: Props) {
   const [zoom, setZoom] = useState<Zoom>("weeks")
-  const [onlyEnabled, setOnlyEnabled] = useState(true)
   const scrollRef = useRef<HTMLDivElement>(null)
   const pxPerDay = PX_PER_DAY[zoom]
   const today = useMemo(() => startOfDay(new Date()), [])
 
-  const visibleProjects = useMemo(
-    () => (onlyEnabled ? projects.filter((p) => visibility[p.key]) : projects),
-    [projects, visibility, onlyEnabled],
-  )
-
   const { rangeStart, rangeEnd } = useMemo(() => {
     const dates: Date[] = []
-    visibleProjects.forEach((p) => {
+    projects.forEach((p) => {
       const s = p.fields.startDate
       const d = p.fields.duedate
       if (s) dates.push(new Date(s))
@@ -76,7 +68,7 @@ export default function ProjectTimeline({
     if (today < start) start = addDays(today, -14)
     if (today > end) end = addDays(today, 14)
     return { rangeStart: startOfDay(start), rangeEnd: startOfDay(end) }
-  }, [visibleProjects, today])
+  }, [projects, today])
 
   const totalDays = Math.max(daysBetween(rangeStart, rangeEnd), 1)
   const totalWidth = totalDays * pxPerDay
@@ -165,48 +157,16 @@ export default function ProjectTimeline({
         className="flex items-center justify-between gap-3 px-4 py-3"
         style={{ borderBottom: "1px solid var(--line-soft)" }}
       >
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => jumpToToday()}
-            className="t-meta px-3.5 py-1.5 rounded-full transition-all active:scale-95"
-            style={{
-              color: "var(--surface)",
-              background: "var(--ink)",
-            }}
-          >
-            Today
-          </button>
-          <label className="flex items-center gap-1.5 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={onlyEnabled}
-              onChange={(e) => setOnlyEnabled(e.target.checked)}
-              className="sr-only"
-            />
-            <span
-              className="flex-shrink-0 w-4 h-4 rounded flex items-center justify-center transition-colors"
-              style={{
-                border: `1.5px solid ${onlyEnabled ? "var(--accent)" : "var(--line)"}`,
-                background: onlyEnabled ? "var(--accent)" : "transparent",
-              }}
-            >
-              {onlyEnabled && (
-                <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                  <path
-                    d="M1 4l3 3 5-6"
-                    stroke="#fff"
-                    strokeWidth="1.75"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              )}
-            </span>
-            <span className="t-meta" style={{ color: "var(--ink-soft)" }}>
-              See only enabled
-            </span>
-          </label>
-        </div>
+        <button
+          onClick={() => jumpToToday()}
+          className="t-meta px-3.5 py-1.5 rounded-full transition-all active:scale-95"
+          style={{
+            color: "var(--surface)",
+            background: "var(--ink)",
+          }}
+        >
+          Today
+        </button>
         <div className="seg">
           {ZOOMS.map((z) => (
             <button
@@ -220,11 +180,9 @@ export default function ProjectTimeline({
         </div>
       </div>
 
-      {visibleProjects.length === 0 ? (
+      {projects.length === 0 ? (
         <div className="py-16 text-center text-sm" style={{ color: "var(--ink-faint)" }}>
-          {onlyEnabled && projects.length > 0
-            ? "No enabled projects to show — toggle some on in List view, or turn off “See only enabled”."
-            : "No projects to show."}
+          No projects to show.
         </div>
       ) : (
         <div className="flex">
@@ -239,7 +197,7 @@ export default function ProjectTimeline({
                 borderBottom: "1px solid var(--line-soft)",
               }}
             />
-            {visibleProjects.map((p) => (
+            {projects.map((p) => (
               <button
                 key={p.key}
                 onClick={() => onSelect(p)}
@@ -323,7 +281,7 @@ export default function ProjectTimeline({
               />
 
               {/* Rows */}
-              {visibleProjects.map((p) => {
+              {projects.map((p) => {
                 const s = p.fields.startDate
                   ? new Date(p.fields.startDate)
                   : null
