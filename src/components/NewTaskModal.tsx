@@ -275,11 +275,13 @@ export function ModalShell({
   onClose,
   children,
   topRight,
+  wide,
 }: {
   title: string
   onClose: () => void
   children: React.ReactNode
   topRight?: React.ReactNode
+  wide?: boolean
 }) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -300,7 +302,7 @@ export function ModalShell({
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
-        className="sheet-in w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl overflow-y-auto"
+        className={`sheet-in w-full ${wide ? "sm:max-w-2xl" : "sm:max-w-lg"} rounded-t-3xl sm:rounded-2xl overflow-y-auto`}
         style={{
           maxHeight: "90vh",
           background: "var(--surface)",

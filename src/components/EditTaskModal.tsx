@@ -47,7 +47,14 @@ export default function EditTaskModal({
   })
 
   useEffect(() => {
-    getAssignableUsers().then(setUsers)
+    getAssignableUsers().then((u) => {
+      const current = issue.fields.assignee
+      if (current && !u.find((x) => x.accountId === current.accountId)) {
+        setUsers([current, ...u])
+      } else {
+        setUsers(u)
+      }
+    })
   }, [])
 
   function searchAssignees(query: string) {

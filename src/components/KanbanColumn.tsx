@@ -11,6 +11,7 @@ interface Props {
   onNewTask: () => void
   onEditTask: (issue: JiraIssue) => void
   newIssueKeys?: Set<string>
+  justDoneKeys?: Set<string>
 }
 
 function SwapIcon({ className }: { className?: string }) {
@@ -39,6 +40,7 @@ export default function KanbanColumn({
   onNewTask,
   onEditTask,
   newIssueKeys,
+  justDoneKeys,
 }: Props) {
   const { setNodeRef, isOver } = useDroppable({ id })
   const [collapsed, setCollapsed] = useState(false)
@@ -144,6 +146,7 @@ export default function KanbanColumn({
               issue={issue}
               onEdit={onEditTask}
               isNew={newIssueKeys?.has(issue.key)}
+              isJustDone={justDoneKeys?.has(issue.key)}
             />
           </div>
         ))}

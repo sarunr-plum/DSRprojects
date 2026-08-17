@@ -166,8 +166,8 @@ export default function LoginPage({
         </div>
 
         <h1
-          className="t-display normal-case text-center text-[clamp(1.75rem,6vw,3.25rem)] mb-3 whitespace-nowrap"
-          style={{ color: "var(--ink)" }}
+          className="t-display text-center text-[clamp(1.75rem,6vw,3.25rem)] mb-3 whitespace-nowrap"
+          style={{ color: "var(--ink)", textTransform: "none" }}
         >
           Design &amp; Research
         </h1>

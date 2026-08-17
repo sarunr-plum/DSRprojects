@@ -1,11 +1,15 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react"
-import { getEpics, getCurrentUser, type JiraEpic } from "../lib/jira"
+import { getEpics, getCurrentUser, updateEpicDates, type JiraEpic, type JiraUser } from "../lib/jira"
 import {
   getEpicVisibility,
   setEpicVisible,
   getEpicFilters,
   setEpicFilters,
   hasStoredEpicFilters,
+  getCachedEpics,
+  setCachedEpics,
+  getSavedOnlyEnabled,
+  setSavedOnlyEnabled,
 } from "../lib/storage"
 import ProjectTimeline from "../components/ProjectTimeline"
 import ProjectDetailsModal from "../components/ProjectDetailsModal"
@@ -81,20 +85,22 @@ export default function EpicsPage({ onRegisterRefresh }: Props) {
   )
   const [view, setView] = useState<ViewMode>("list")
   const [sortKey, setSortKey] = useState<SortKey>("newest")
-  const [onlyEnabled, setOnlyEnabled] = useState(true)
+  const [onlyEnabled, setOnlyEnabled] = useState<boolean>(() => getSavedOnlyEnabled())
   const [selectedEpic, setSelectedEpic] = useState<JiraEpic | null>(null)
   const [currentUserName, setCurrentUserName] = useState<string | null>(null)
   const [userResolved, setUserResolved] = useState(false)
   const defaultAssigneeApplied = useRef(false)
-  // Captured once, before this session writes anything — tells the
-  // first-run-default effect whether the user already has saved filters.
   const hadStoredFilters = useRef(hasStoredEpicFilters())
 
-  // Persist on every change (including a manual "Clear filters") so filters
-  // survive switching tabs and reloading, until the user changes them again.
+  // Persist filters on every change
   useEffect(() => {
     setEpicFilters({ status: filterStatus, assignee: filterAssignee })
   }, [filterStatus, filterAssignee])
+
+  // Persist onlyEnabled
+  useEffect(() => {
+    setSavedOnlyEnabled(onlyEnabled)
+  }, [onlyEnabled])
 
   useEffect(() => {
     getCurrentUser()
@@ -104,11 +110,25 @@ export default function EpicsPage({ onRegisterRefresh }: Props) {
   }, [])
 
   const loadEpics = useCallback(async () => {
+    setVisibility(getEpicVisibility())
+    const cached = getCachedEpics()
+    if (cached) {
+      setEpics(cached)
+      setLoading(false)
+      // Background refresh
+      getEpics()
+        .then((fetched) => {
+          setCachedEpics(fetched)
+          setEpics(fetched)
+        })
+        .catch(() => {})
+      return
+    }
     setLoading(true)
     setError("")
     try {
-      setVisibility(getEpicVisibility())
       const fetched = await getEpics()
+      setCachedEpics(fetched)
       setEpics(fetched)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load projects")
@@ -170,6 +190,22 @@ export default function EpicsPage({ onRegisterRefresh }: Props) {
     )
   }
 
+  const handleDragDatesChange = useCallback(
+    async (epicKey: string, fields: { startDate?: string; dueDate?: string }) => {
+      handleDatesChanged(epicKey, fields)
+      try {
+        await updateEpicDates(epicKey, {
+          ...(fields.startDate !== undefined ? { startDate: fields.startDate } : {}),
+          ...(fields.dueDate !== undefined ? { dueDate: fields.dueDate } : {}),
+        })
+      } catch {
+        loadEpics()
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  )
+
   function handleStatusChanged(
     epicKey: string,
     status: { id: string; name: string },
@@ -186,7 +222,21 @@ export default function EpicsPage({ onRegisterRefresh }: Props) {
     )
   }
 
-  // Derive unique filter options
+  function handleAssigneeChanged(epicKey: string, assignee: JiraUser | null) {
+    setEpics((prev) =>
+      prev.map((e) =>
+        e.key === epicKey
+          ? { ...e, fields: { ...e.fields, assignee: assignee ?? undefined } }
+          : e,
+      ),
+    )
+    setSelectedEpic((prev) =>
+      prev && prev.key === epicKey
+        ? { ...prev, fields: { ...prev.fields, assignee: assignee ?? undefined } }
+        : prev,
+    )
+  }
+
   const statusOptions = useMemo(
     () => Array.from(new Set(epics.map((e) => e.fields.status.name))).sort(),
     [epics],
@@ -203,10 +253,6 @@ export default function EpicsPage({ onRegisterRefresh }: Props) {
     [epics],
   )
 
-  // Default the assignee filter to the logged-in user, once, the first time
-  // their name actually shows up among the loaded epics' assignees — but only
-  // on a genuinely first-ever run. If filters were already saved (even
-  // cleared to empty), respect them instead of overriding.
   useEffect(() => {
     if (defaultAssigneeApplied.current) return
     if (!userResolved || assigneeOptions.length === 0) return
@@ -239,7 +285,7 @@ export default function EpicsPage({ onRegisterRefresh }: Props) {
       {!loading && epics.length > 0 && (
         <>
           <div className="flex items-end justify-between gap-4 mb-1 rise-in">
-            <h2 className="t-display text-[clamp(1.75rem,5vw,2.75rem)]" style={{ color: "var(--ink)" }}>
+            <h2 className="t-display text-[clamp(1.75rem,5vw,2.75rem)]" style={{ color: "var(--ink)", textTransform: "none" }}>
               Projects
             </h2>
             <p className="t-meta pb-1.5" style={{ color: "var(--ink-soft)" }}>
@@ -369,7 +415,7 @@ export default function EpicsPage({ onRegisterRefresh }: Props) {
             {epics.length === 0
               ? "Make sure your Jira project has at least one Epic."
               : onlyEnabled
-                ? "Toggle some projects on, or turn off “See only enabled”."
+                ? 'Toggle some projects on, or turn off "See only enabled".'
                 : "Try adjusting the filters above."}
           </p>
         </div>
@@ -380,6 +426,7 @@ export default function EpicsPage({ onRegisterRefresh }: Props) {
           projects={sorted}
           statusStyle={statusStyle}
           onSelect={setSelectedEpic}
+          onDragDatesChange={handleDragDatesChange}
         />
       )}
 
@@ -481,6 +528,7 @@ export default function EpicsPage({ onRegisterRefresh }: Props) {
           onClose={() => setSelectedEpic(null)}
           onDatesChanged={handleDatesChanged}
           onStatusChanged={handleStatusChanged}
+          onAssigneeChanged={handleAssigneeChanged}
         />
       )}
     </main>

@@ -1,7 +1,3 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#F8F4EA"/>
-  <!-- Large sparkle centred at 220,290 -->
-  <path d="M220 118 L237 228 A18 18 0 0 1 255 246 L365 263 L255 280 A18 18 0 0 1 237 298 L220 408 L203 298 A18 18 0 0 1 185 280 L75 263 L185 246 A18 18 0 0 1 203 228 Z" fill="#14100D"/>
-  <!-- Small sparkle upper-right -->
-  <path d="M350 110 L358 164 A10 10 0 0 1 368 174 L422 182 L368 190 A10 10 0 0 1 358 200 L350 254 L342 200 A10 10 0 0 1 332 190 L278 182 L332 174 A10 10 0 0 1 342 164 Z" fill="#14100D" opacity="0.55"/>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 430 430">
+  <image href="/icons/rr.png" width="430" height="430"/>
 </svg>

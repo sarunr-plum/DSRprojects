@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import {
   DndContext,
   PointerSensor,
@@ -14,8 +14,9 @@ import {
   getCurrentUser,
   type JiraIssue,
   type JiraEpic,
+  type JiraUser,
 } from "../lib/jira"
-import { getVisibleEpicKeys } from "../lib/storage"
+import { getVisibleEpicKeys, getCachedTasks, setCachedTasks } from "../lib/storage"
 import {
   COLUMNS,
   STATUS_TO_COLUMN,
@@ -36,6 +37,8 @@ interface Props {
 
 type NewTaskConfig = { columnId: ColumnId; assigneeName?: string }
 
+const UNASSIGNED_ID = "__unassigned__"
+
 export default function BoardPage({
   onGoToProjects,
   onRegisterRefresh,
@@ -45,12 +48,13 @@ export default function BoardPage({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [activeTab, setActiveTab] = useState<string>("")
-  const [currentUserName, setCurrentUserName] = useState<string | null>(null)
+  const [currentUser, setCurrentUser] = useState<JiraUser | null>(null)
   const [userResolved, setUserResolved] = useState(false)
   const [newTaskConfig, setNewTaskConfig] = useState<NewTaskConfig | null>(null)
   const [editingIssue, setEditingIssue] = useState<JiraIssue | null>(null)
   const [draggingIssue, setDraggingIssue] = useState<JiraIssue | null>(null)
   const [newIssueKeys, setNewIssueKeys] = useState<Set<string>>(new Set())
+  const [justDoneKeys, setJustDoneKeys] = useState<Set<string>>(new Set())
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -59,22 +63,37 @@ export default function BoardPage({
     }),
   )
 
-  // `opts.silent` skips the loading skeleton/error UI for background refreshes.
-  // `opts.keepKeys` preserves those issues locally if the server response doesn't
-  // include them yet — Jira's search index can lag a moment behind a fresh write.
   const loadTasks = useCallback(
     async (opts?: { silent?: boolean; keepKeys?: string[] }) => {
+      const epicKeys = getVisibleEpicKeys()
+      if (epicKeys.length === 0) {
+        setIssues([])
+        setLoading(false)
+        return
+      }
+
+      // On non-silent loads, serve from cache immediately then refresh in background
       if (!opts?.silent) {
+        const cached = getCachedTasks()
+        if (cached) {
+          setIssues(cached)
+          setLoading(false)
+          // Background refresh
+          getTasksForEpics(epicKeys)
+            .then((tasks) => {
+              setCachedTasks(tasks)
+              setIssues(tasks)
+            })
+            .catch(() => {})
+          return
+        }
         setLoading(true)
         setError("")
       }
+
       try {
-        const epicKeys = getVisibleEpicKeys()
-        if (epicKeys.length === 0) {
-          setIssues([])
-          return
-        }
         const tasks = await getTasksForEpics(epicKeys)
+        setCachedTasks(tasks)
         setIssues((prev) => {
           if (!opts?.keepKeys?.length) return tasks
           const stillMissing = prev.filter(
@@ -113,53 +132,67 @@ export default function BoardPage({
         return next
       })
     }, 600)
-    // Reconcile with Jira in the background, without dropping the card if the
-    // search index hasn't caught up yet.
     setTimeout(() => loadTasks({ silent: true, keepKeys: [issue.key] }), 1500)
     setTimeout(() => loadTasks({ silent: true, keepKeys: [issue.key] }), 4000)
   }
 
   useEffect(() => {
     getCurrentUser()
-      .then((u) => setCurrentUserName(u?.displayName ?? null))
-      .catch(() => setCurrentUserName(null))
+      .then((u) => setCurrentUser(u))
+      .catch(() => setCurrentUser(null))
       .finally(() => setUserResolved(true))
   }, [])
 
-  // Derive people tabs from loaded issues, then pin the logged-in user's tab first.
-  const sortedPeople = Array.from(
-    new Set(issues.map((i) => i.fields.assignee?.displayName ?? "Unassigned")),
-  ).sort((a, b) =>
-    a === "Unassigned" ? 1 : b === "Unassigned" ? -1 : a.localeCompare(b),
-  )
-  const people =
-    currentUserName && sortedPeople.includes(currentUserName)
-      ? [currentUserName, ...sortedPeople.filter((p) => p !== currentUserName)]
-      : sortedPeople
+  // Build a stable map: accountId → displayName (using accountId as tab key
+  // avoids displayName mismatch bugs, e.g. when a user's name changed in Jira).
+  const peopleById = useMemo(() => {
+    const map = new Map<string, string>()
+    issues.forEach((i) => {
+      if (i.fields.assignee) {
+        map.set(i.fields.assignee.accountId, i.fields.assignee.displayName)
+      } else {
+        map.set(UNASSIGNED_ID, "Unassigned")
+      }
+    })
+    return map
+  }, [issues])
+
+  // Sorted list of accountIds, current user pinned first
+  const people = useMemo(() => {
+    const ids = Array.from(peopleById.keys()).sort((a, b) => {
+      if (a === UNASSIGNED_ID) return 1
+      if (b === UNASSIGNED_ID) return -1
+      return (peopleById.get(a) ?? "").localeCompare(peopleById.get(b) ?? "")
+    })
+    const currentId = currentUser?.accountId
+    if (currentId && peopleById.has(currentId)) {
+      return [currentId, ...ids.filter((id) => id !== currentId)]
+    }
+    return ids
+  }, [peopleById, currentUser])
 
   useEffect(() => {
     if (!userResolved || people.length === 0) return
     if (activeTab && people.includes(activeTab)) return
+    const currentId = currentUser?.accountId
     setActiveTab(
-      currentUserName && people.includes(currentUserName)
-        ? currentUserName
-        : people[0],
+      currentId && people.includes(currentId) ? currentId : people[0],
     )
-  }, [people, activeTab, currentUserName, userResolved])
+  }, [people, activeTab, currentUser, userResolved])
 
-  // Issues for the active person tab
+  // Filter issues by accountId — immune to displayName inconsistencies
   const tabIssues = issues.filter((i) =>
-    activeTab === "Unassigned"
+    activeTab === UNASSIGNED_ID
       ? !i.fields.assignee
-      : i.fields.assignee?.displayName === activeTab,
+      : i.fields.assignee?.accountId === activeTab,
   )
 
-  // Only render columns that have tasks, but always show todo + inprogress
+  // Always show todo + inprogress; add any other columns that have tasks
   const activeColumnIds = new Set([
     "todo" as ColumnId,
     "inprogress" as ColumnId,
     ...tabIssues.map(
-      (i) => STATUS_TO_COLUMN[i.fields.status.name] ?? "todo" as ColumnId,
+      (i) => (STATUS_TO_COLUMN[i.fields.status.name] ?? "todo") as ColumnId,
     ),
   ])
   const visibleColumns = COLUMNS.filter((c) => activeColumnIds.has(c.id))
@@ -188,6 +221,10 @@ export default function BoardPage({
     const targetStatusNames = COLUMN_STATUS_NAMES[targetColId]
     if (!targetStatusNames) return
 
+    const currentIssue = issues.find((i) => i.key === issueKey)
+    const wasInDone =
+      (STATUS_TO_COLUMN[currentIssue?.fields.status.name ?? ""] ?? "todo") === "done"
+
     // Optimistic update
     setIssues((prev) =>
       prev.map((i) =>
@@ -203,6 +240,18 @@ export default function BoardPage({
       ),
     )
 
+    // Animate spark when moving into Done
+    if (targetColId === "done" && !wasInDone) {
+      setJustDoneKeys((prev) => new Set(prev).add(issueKey))
+      setTimeout(() => {
+        setJustDoneKeys((prev) => {
+          const next = new Set(prev)
+          next.delete(issueKey)
+          return next
+        })
+      }, 850)
+    }
+
     try {
       await transitionToStatus(issueKey, targetStatusNames)
     } catch {
@@ -213,6 +262,10 @@ export default function BoardPage({
   const visibleEpicKeys = getVisibleEpicKeys()
   const visibleEpics = epics.filter((e) => visibleEpicKeys.includes(e.key))
 
+  // The skeleton width mirrors the typical 2-column initial view (todo + inprogress)
+  // to avoid a jarring layout shift when content loads.
+  const skeletonCols = COLUMNS.slice(0, 2)
+
   return (
     <>
       {/* Person tabs */}
@@ -222,19 +275,22 @@ export default function BoardPage({
           style={{ borderBottom: "1px solid var(--line)" }}
         >
           <div className="flex gap-2 mx-auto">
-            {people.map((person, i) => (
+            {people.map((accountId, i) => (
               <button
-                key={person}
-                onClick={() => setActiveTab(person)}
+                key={accountId}
+                onClick={() => setActiveTab(accountId)}
                 className="t-meta flex-shrink-0 px-4 py-2 rounded-full whitespace-nowrap rise-in"
                 style={{
                   animationDelay: `${Math.min(i, 10) * 25}ms`,
-                  background: activeTab === person ? "var(--ink)" : "transparent",
-                  color: activeTab === person ? "var(--bg)" : "var(--ink-soft)",
-                  transition: "background var(--t) var(--ease), color var(--t) var(--ease)",
+                  background:
+                    activeTab === accountId ? "var(--ink)" : "transparent",
+                  color:
+                    activeTab === accountId ? "var(--bg)" : "var(--ink-soft)",
+                  transition:
+                    "background var(--t) var(--ease), color var(--t) var(--ease)",
                 }}
               >
-                {person}
+                {peopleById.get(accountId) ?? accountId}
               </button>
             ))}
           </div>
@@ -281,17 +337,17 @@ export default function BoardPage({
           </div>
         )}
 
-        {/* Loading skeletons */}
+        {/* Loading skeletons — width matches typical 2-column board to avoid jarring shift */}
         {loading && (
           <div className="flex gap-7 overflow-hidden w-fit mx-auto">
-            {COLUMNS.map((col) => (
+            {skeletonCols.map((col) => (
               <div key={col.id} className="flex-shrink-0 w-[19.8rem] sm:w-[22rem]">
                 <div className="flex items-center gap-2 mb-3 px-1">
                   <div className="w-2 h-2 rounded-full bg-[var(--track)] animate-pulse" />
                   <div className="h-4 w-20 rounded bg-[var(--track)] animate-pulse" />
                 </div>
                 <div className="flex flex-col gap-2.5">
-                  {[...Array(2)].map((_, i) => (
+                  {[...Array(3)].map((_, i) => (
                     <div
                       key={i}
                       className="h-20 bg-[var(--surface)] rounded-xl animate-pulse"
@@ -330,11 +386,14 @@ export default function BoardPage({
                     setNewTaskConfig({
                       columnId: col.id,
                       assigneeName:
-                        activeTab !== "Unassigned" ? activeTab : undefined,
+                        activeTab !== UNASSIGNED_ID && activeTab
+                          ? peopleById.get(activeTab)
+                          : undefined,
                     })
                   }
                   onEditTask={setEditingIssue}
                   newIssueKeys={newIssueKeys}
+                  justDoneKeys={justDoneKeys}
                 />
               ))}
             </div>
@@ -356,7 +415,10 @@ export default function BoardPage({
           onClick={() =>
             setNewTaskConfig({
               columnId: "todo",
-              assigneeName: activeTab !== "Unassigned" ? activeTab : undefined,
+              assigneeName:
+                activeTab !== UNASSIGNED_ID && activeTab
+                  ? peopleById.get(activeTab)
+                  : undefined,
             })
           }
           className="btn-primary fixed z-40 left-1/2 -translate-x-1/2 shadow-lg"
@@ -368,7 +430,7 @@ export default function BoardPage({
             boxShadow: "0 10px 24px -6px rgb(var(--ink-rgb) / 0.35)",
           }}
         >
-          + Add
+          + ADD
         </button>
       )}
 

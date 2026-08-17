@@ -328,6 +328,17 @@ export async function getCurrentUser(): Promise<JiraUser | null> {
   return res.json() as Promise<JiraUser>
 }
 
+export async function updateEpicAssignee(key: string, accountId: string | null): Promise<void> {
+  const res = await jiraFetch(`/issue/${key}`, {
+    method: "PUT",
+    body: JSON.stringify({ fields: { assignee: accountId ? { accountId } : null } }),
+  })
+  if (!res.ok && res.status !== 204) {
+    const err = await res.text()
+    throw new Error(`Jira API ${res.status}: ${err}`)
+  }
+}
+
 export async function deleteIssue(issueKey: string): Promise<void> {
   const res = await jiraFetch(`/issue/${issueKey}`, { method: "DELETE" })
   if (!res.ok && res.status !== 204) {

@@ -1,14 +1,18 @@
 import { useState, useEffect, useRef } from "react"
 import NewTaskModal, { ModalShell } from "./NewTaskModal"
 import EditTaskModal from "./EditTaskModal"
+import SearchableSelect, { type SelectOption } from "./SearchableSelect"
 import {
   getTasksForEpics,
   updateEpicDates,
+  updateEpicAssignee,
+  getAssignableUsers,
   getTransitions,
   applyTransition,
   type JiraEpic,
   type JiraIssue,
   type JiraTransition,
+  type JiraUser,
 } from "../lib/jira"
 
 interface Props {
@@ -19,6 +23,7 @@ interface Props {
     fields: { startDate?: string; dueDate?: string },
   ) => void
   onStatusChanged: (epicKey: string, status: { id: string; name: string }) => void
+  onAssigneeChanged: (epicKey: string, assignee: JiraUser | null) => void
 }
 
 const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
@@ -37,6 +42,7 @@ export default function ProjectDetailsModal({
   onClose,
   onDatesChanged,
   onStatusChanged,
+  onAssigneeChanged,
 }: Props) {
   const [startDate, setStartDate] = useState(epic.fields.startDate ?? "")
   const [dueDate, setDueDate] = useState(epic.fields.duedate ?? "")
@@ -48,6 +54,13 @@ export default function ProjectDetailsModal({
   const [transitions, setTransitions] = useState<JiraTransition[]>([])
   const [statusSaving, setStatusSaving] = useState(false)
   const [statusError, setStatusError] = useState("")
+
+  const [currentAssignee, setCurrentAssignee] = useState<JiraUser | undefined>(
+    epic.fields.assignee,
+  )
+  const [assignableUsers, setAssignableUsers] = useState<JiraUser[]>([])
+  const [assigneeSaving, setAssigneeSaving] = useState(false)
+  const [assigneeError, setAssigneeError] = useState("")
 
   const [tasks, setTasks] = useState<JiraIssue[]>([])
   const [tasksLoading, setTasksLoading] = useState(true)
@@ -77,6 +90,17 @@ export default function ProjectDetailsModal({
       .then(setTransitions)
       .catch(() => setTransitions([]))
   }, [epic.key])
+
+  useEffect(() => {
+    getAssignableUsers().then((u) => {
+      const current = epic.fields.assignee
+      if (current && !u.find((x) => x.accountId === current.accountId)) {
+        setAssignableUsers([current, ...u])
+      } else {
+        setAssignableUsers(u)
+      }
+    }).catch(() => {})
+  }, [])
 
   async function handleStatusChange(transitionId: string) {
     const transition = transitions.find((t) => t.id === transitionId)
@@ -139,7 +163,37 @@ export default function ProjectDetailsModal({
     }
   }
 
+  async function handleAssigneeChange(accountId: string) {
+    const prevAssignee = currentAssignee
+    const newUser = accountId ? assignableUsers.find((u) => u.accountId === accountId) ?? null : null
+    setCurrentAssignee(newUser ?? undefined)
+    setAssigneeSaving(true)
+    setAssigneeError("")
+    try {
+      await updateEpicAssignee(epic.key, accountId || null)
+      onAssigneeChanged(epic.key, newUser)
+    } catch (err) {
+      setCurrentAssignee(prevAssignee)
+      const message =
+        err instanceof Error && err.message.includes("403")
+          ? "You don't have permission to change the assignee."
+          : "Failed to update assignee — please try again."
+      setAssigneeError(message)
+    } finally {
+      setAssigneeSaving(false)
+    }
+  }
+
+  function searchAssignees(query: string) {
+    getAssignableUsers(query).then(setAssignableUsers).catch(() => {})
+  }
+
   const s = statusStyle(currentStatus)
+
+  const assigneeOptions: SelectOption[] = assignableUsers.map((u) => ({
+    value: u.accountId,
+    label: u.displayName,
+  }))
 
   const keyTag = (
     <a
@@ -159,7 +213,7 @@ export default function ProjectDetailsModal({
   )
 
   return (
-    <ModalShell title={epic.fields.summary} onClose={onClose} topRight={keyTag}>
+    <ModalShell title={epic.fields.summary} onClose={onClose} topRight={keyTag} wide>
       <div className="flex flex-col gap-5">
         <div className="flex items-center gap-2 flex-wrap">
           {transitions.length > 0 ? (
@@ -176,11 +230,6 @@ export default function ProjectDetailsModal({
               style={{ background: s.bg, color: s.text }}
             >
               {currentStatus}
-            </span>
-          )}
-          {epic.fields.assignee && (
-            <span className="text-xs" style={{ color: "var(--ink-soft)" }}>
-              Owner: {epic.fields.assignee.displayName}
             </span>
           )}
         </div>
@@ -203,6 +252,32 @@ export default function ProjectDetailsModal({
           </p>
         )}
 
+        {assigneeError && (
+          <p
+            className="text-sm px-3 py-2 rounded-lg"
+            style={{ background: "var(--danger-wash)", color: "var(--danger)" }}
+          >
+            {assigneeError}
+          </p>
+        )}
+
+        {/* Assignee + dates */}
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Assignee">
+            <div style={{ opacity: assigneeSaving ? 0.6 : 1, pointerEvents: assigneeSaving ? "none" : undefined }}>
+              <SearchableSelect
+                options={assigneeOptions}
+                value={currentAssignee?.accountId ?? ""}
+                onChange={handleAssigneeChange}
+                onSearch={searchAssignees}
+                placeholder="Search people…"
+                emptyLabel="Unassigned"
+              />
+            </div>
+          </Field>
+          <div />
+        </div>
+
         <div className="grid grid-cols-2 gap-3">
           <Field label="Start date">
             <input
@@ -224,9 +299,10 @@ export default function ProjectDetailsModal({
           </Field>
         </div>
 
+        {/* Tasks */}
         <div>
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-medium" style={{ color: "var(--ink-soft)" }}>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--ink-soft)" }}>
               Tasks{!tasksLoading && !tasksError ? ` (${tasks.length})` : ""}
             </p>
             <button
@@ -244,11 +320,11 @@ export default function ProjectDetailsModal({
           </div>
 
           {tasksLoading && (
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               {[...Array(3)].map((_, i) => (
                 <div
                   key={i}
-                  className="h-9 rounded-lg animate-pulse"
+                  className="h-12 rounded-xl animate-pulse"
                   style={{ background: "var(--bg)" }}
                 />
               ))}
@@ -268,7 +344,7 @@ export default function ProjectDetailsModal({
           )}
 
           {!tasksLoading && tasks.length > 0 && (
-            <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
+            <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
               {tasks.map((t) => {
                 const ts = statusStyle(t.fields.status.name)
                 return (
@@ -278,28 +354,18 @@ export default function ProjectDetailsModal({
                     tabIndex={0}
                     onClick={() => setEditingTask(t)}
                     onKeyDown={(e) => e.key === "Enter" && setEditingTask(t)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors hover:bg-[var(--surface-sunk)]"
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-colors hover:bg-[var(--surface-sunk)] group"
                     style={{ border: "1px solid var(--line-soft)" }}
                   >
-                    <a
-                      href={`https://plumhq.atlassian.net/browse/${t.key}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="text-xs flex-shrink-0 hover:underline"
-                      style={{
-                        fontFamily: "'DM Sans', sans-serif",
-                        color: "var(--ink-faint)",
-                      }}
-                    >
-                      {t.key}
-                    </a>
+                    {/* Summary */}
                     <span
-                      className="text-xs flex-1 truncate"
-                      style={{ color: "var(--ink)" }}
+                      className="text-[15px] font-semibold flex-1 truncate"
+                      style={{ color: "var(--ink)", letterSpacing: "-0.01em" }}
                     >
                       {t.fields.summary}
                     </span>
+
+                    {/* Assignee — always visible */}
                     {t.fields.assignee && (
                       <span
                         className="text-xs flex-shrink-0"
@@ -308,6 +374,8 @@ export default function ProjectDetailsModal({
                         {t.fields.assignee.displayName}
                       </span>
                     )}
+
+                    {/* Status badge */}
                     <span
                       className="text-xs px-2 py-0.5 rounded-full flex-shrink-0 font-medium"
                       style={{ background: ts.bg, color: ts.text }}
@@ -325,7 +393,7 @@ export default function ProjectDetailsModal({
       {addingTask && (
         <NewTaskModal
           defaultColumnId="todo"
-          defaultAssigneeName={epic.fields.assignee?.displayName}
+          defaultAssigneeName={currentAssignee?.displayName}
           epics={[epic]}
           onClose={() => setAddingTask(false)}
           onCreated={(issue) => {

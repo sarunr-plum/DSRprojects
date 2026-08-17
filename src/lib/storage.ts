@@ -1,4 +1,4 @@
-import type { JiraEpic } from "./jira"
+import type { JiraEpic, JiraIssue } from "./jira"
 
 export interface StoredTokens {
   access_token: string
@@ -88,4 +88,50 @@ export function getEpicFilters(): EpicFilters {
 
 export function setEpicFilters(filters: EpicFilters): void {
   localStorage.setItem(EPIC_FILTERS_KEY, JSON.stringify(filters))
+}
+
+// ─── Task / Epic cache ───────────────────────────────────────────────────────
+
+const TASKS_CACHE_KEY = "dsr_tasks_cache"
+const EPICS_CACHE_KEY = "dsr_epics_cache"
+const CACHE_TTL_MS = 5 * 60 * 1000
+
+export function getCachedTasks(): JiraIssue[] | null {
+  try {
+    const raw = localStorage.getItem(TASKS_CACHE_KEY)
+    if (!raw) return null
+    const { data, ts } = JSON.parse(raw) as { data: JiraIssue[]; ts: number }
+    if (Date.now() - ts > CACHE_TTL_MS) return null
+    return data
+  } catch { return null }
+}
+
+export function setCachedTasks(data: JiraIssue[]): void {
+  try { localStorage.setItem(TASKS_CACHE_KEY, JSON.stringify({ data, ts: Date.now() })) } catch {}
+}
+
+export function getCachedEpics(): JiraEpic[] | null {
+  try {
+    const raw = localStorage.getItem(EPICS_CACHE_KEY)
+    if (!raw) return null
+    const { data, ts } = JSON.parse(raw) as { data: JiraEpic[]; ts: number }
+    if (Date.now() - ts > CACHE_TTL_MS) return null
+    return data
+  } catch { return null }
+}
+
+export function setCachedEpics(data: JiraEpic[]): void {
+  try { localStorage.setItem(EPICS_CACHE_KEY, JSON.stringify({ data, ts: Date.now() })) } catch {}
+}
+
+// ─── Projects-page "See only enabled" toggle persistence ────────────────────
+
+export function getSavedOnlyEnabled(): boolean {
+  const val = localStorage.getItem("dsr_only_enabled")
+  if (val === null) return false // default: unchecked
+  return val === "true"
+}
+
+export function setSavedOnlyEnabled(val: boolean): void {
+  localStorage.setItem("dsr_only_enabled", String(val))
 }

@@ -1,4 +1,4 @@
-import { useRef, useState, useMemo, useEffect } from "react"
+import { useRef, useState, useMemo, useEffect, useCallback } from "react"
 import type { JiraEpic } from "../lib/jira"
 
 type Zoom = "days" | "weeks" | "months"
@@ -7,13 +7,18 @@ interface Props {
   projects: JiraEpic[]
   statusStyle: (name: string) => { bg: string; text: string }
   onSelect: (epic: JiraEpic) => void
+  onDragDatesChange: (
+    epicKey: string,
+    fields: { startDate?: string; dueDate?: string },
+  ) => void
 }
 
 const PX_PER_DAY: Record<Zoom, number> = { days: 36, weeks: 14, months: 4.6 }
 const ZOOMS: Zoom[] = ["days", "weeks", "months"]
-const ROW_HEIGHT = 48
+const ROW_HEIGHT = 52
 const UNIT_ROW_HEIGHT = 44
 const GROUP_ROW_HEIGHT = 24
+const HANDLE_W = 10
 
 function startOfDay(d: Date): Date {
   const x = new Date(d)
@@ -35,14 +40,28 @@ function daysBetween(a: Date, b: Date): number {
 
 function startOfWeek(d: Date): Date {
   const x = startOfDay(d)
-  const dow = (x.getDay() + 6) % 7 // Monday = 0
+  const dow = (x.getDay() + 6) % 7
   return addDays(x, -dow)
+}
+
+function toISODate(d: Date): string {
+  return d.toISOString().split("T")[0]
+}
+
+type DragInfo = {
+  key: string
+  handle: "start" | "end"
+  startClientX: number
+  origStartDay: number
+  origEndDay: number
+  lastStartDay: number
+  lastEndDay: number
 }
 
 export default function ProjectTimeline({
   projects,
-  statusStyle,
   onSelect,
+  onDragDatesChange,
 }: Props) {
   const [zoom, setZoom] = useState<Zoom>("weeks")
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -85,10 +104,7 @@ export default function ProjectTimeline({
       while (cursor < rangeEnd) {
         cols.push({
           date: cursor,
-          label: cursor.toLocaleDateString("en-GB", {
-            day: "numeric",
-            month: "short",
-          }),
+          label: cursor.toLocaleDateString("en-GB", { day: "numeric", month: "short" }),
           widthDays: 7,
         })
         cursor = addDays(cursor, 7)
@@ -99,10 +115,7 @@ export default function ProjectTimeline({
         const next = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1)
         cols.push({
           date: cursor,
-          label: cursor.toLocaleDateString("en-GB", {
-            month: "short",
-            year: "numeric",
-          }),
+          label: cursor.toLocaleDateString("en-GB", { month: "short", year: "numeric" }),
           widthDays: daysBetween(cursor, next),
         })
         cursor = next
@@ -111,16 +124,11 @@ export default function ProjectTimeline({
     return cols
   }, [zoom, rangeStart, rangeEnd, totalDays])
 
-  // Grouping row above the unit labels (month names) — only useful when the
-  // unit itself is finer than a month.
   const groupHeader = useMemo(() => {
     if (zoom === "months") return null
     const groups: { label: string; widthDays: number }[] = []
     columns.forEach((c) => {
-      const label = c.date.toLocaleDateString("en-GB", {
-        month: "long",
-        year: "numeric",
-      })
+      const label = c.date.toLocaleDateString("en-GB", { month: "long", year: "numeric" })
       const last = groups[groups.length - 1]
       if (last && last.label === label) last.widthDays += c.widthDays
       else groups.push({ label, widthDays: c.widthDays })
@@ -141,6 +149,78 @@ export default function ProjectTimeline({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [zoom])
 
+  // ── Drag handles ─────────────────────────────────────────────────────────
+  const dragRef = useRef<DragInfo | null>(null)
+  const didDragRef = useRef(false) // true if mouse moved during a drag; blocks the click event
+  const [activeDrag, setActiveDrag] = useState<{
+    key: string
+    startDay: number
+    endDay: number
+  } | null>(null)
+
+  const stableDragDatesChange = useCallback(onDragDatesChange, [onDragDatesChange])
+
+  useEffect(() => {
+    function onMouseMove(e: MouseEvent) {
+      const d = dragRef.current
+      if (!d) return
+      didDragRef.current = true
+      const deltaDays = Math.round((e.clientX - d.startClientX) / pxPerDay)
+      let startDay = d.origStartDay
+      let endDay = d.origEndDay
+      if (d.handle === "start") {
+        startDay = Math.min(d.origStartDay + deltaDays, d.origEndDay - 1)
+      } else {
+        endDay = Math.max(d.origEndDay + deltaDays, d.origStartDay + 1)
+      }
+      d.lastStartDay = startDay
+      d.lastEndDay = endDay
+      setActiveDrag({ key: d.key, startDay, endDay })
+    }
+
+    function onMouseUp() {
+      const d = dragRef.current
+      if (!d) return
+      dragRef.current = null
+      const fields: { startDate?: string; dueDate?: string } = {}
+      if (d.handle === "start") {
+        fields.startDate = toISODate(addDays(rangeStart, d.lastStartDay))
+      } else {
+        fields.dueDate = toISODate(addDays(rangeStart, d.lastEndDay))
+      }
+      setActiveDrag(null)
+      stableDragDatesChange(d.key, fields)
+    }
+
+    document.addEventListener("mousemove", onMouseMove)
+    document.addEventListener("mouseup", onMouseUp)
+    return () => {
+      document.removeEventListener("mousemove", onMouseMove)
+      document.removeEventListener("mouseup", onMouseUp)
+    }
+  }, [pxPerDay, rangeStart, stableDragDatesChange])
+
+  function startDrag(
+    e: React.MouseEvent,
+    key: string,
+    handle: "start" | "end",
+    origStartDay: number,
+    origEndDay: number,
+  ) {
+    e.preventDefault()
+    e.stopPropagation()
+    didDragRef.current = false
+    dragRef.current = {
+      key,
+      handle,
+      startClientX: e.clientX,
+      origStartDay,
+      origEndDay,
+      lastStartDay: origStartDay,
+      lastEndDay: origEndDay,
+    }
+  }
+
   const headerHeight = groupHeader ? GROUP_ROW_HEIGHT + UNIT_ROW_HEIGHT : UNIT_ROW_HEIGHT
 
   return (
@@ -160,10 +240,7 @@ export default function ProjectTimeline({
         <button
           onClick={() => jumpToToday()}
           className="t-meta px-3.5 py-1.5 rounded-full transition-all active:scale-95"
-          style={{
-            color: "var(--surface)",
-            background: "var(--ink)",
-          }}
+          style={{ color: "var(--surface)", background: "var(--ink)" }}
         >
           Today
         </button>
@@ -186,30 +263,22 @@ export default function ProjectTimeline({
         </div>
       ) : (
         <div className="flex">
-          {/* Project name column — wide enough for most names, scrolls horizontally for the rest */}
+          {/* Project name column */}
           <div
             className="flex-shrink-0 w-56 sm:w-72"
             style={{ borderRight: "1px solid var(--line-soft)" }}
           >
-            <div
-              style={{
-                height: headerHeight,
-                borderBottom: "1px solid var(--line-soft)",
-              }}
-            />
+            <div style={{ height: headerHeight, borderBottom: "1px solid var(--line-soft)" }} />
             {projects.map((p) => (
               <button
                 key={p.key}
                 onClick={() => onSelect(p)}
                 className="w-full px-3 flex items-center text-left transition-colors hover:bg-[var(--surface-sunk)]"
-                style={{
-                  height: ROW_HEIGHT,
-                  borderBottom: "1px solid var(--line-soft)",
-                }}
+                style={{ height: ROW_HEIGHT, borderBottom: "1px solid var(--line-soft)" }}
               >
                 <span
-                  className="text-xs font-medium block overflow-x-auto whitespace-nowrap"
-                  style={{ color: "var(--ink)" }}
+                  className="text-sm font-semibold block overflow-x-auto whitespace-nowrap"
+                  style={{ color: "var(--ink)", letterSpacing: "-0.01em" }}
                 >
                   {p.fields.summary}
                 </span>
@@ -218,15 +287,16 @@ export default function ProjectTimeline({
           </div>
 
           {/* Scrollable timeline */}
-          <div ref={scrollRef} className="flex-1 overflow-x-auto no-bar">
+          <div
+            ref={scrollRef}
+            className="flex-1 overflow-x-auto no-bar"
+            style={{ cursor: activeDrag ? "ew-resize" : "default" }}
+          >
             <div style={{ width: totalWidth, position: "relative" }}>
               {groupHeader && (
                 <div
                   className="flex"
-                  style={{
-                    borderBottom: "1px solid var(--line-soft)",
-                    height: GROUP_ROW_HEIGHT,
-                  }}
+                  style={{ borderBottom: "1px solid var(--line-soft)", height: GROUP_ROW_HEIGHT }}
                 >
                   {groupHeader.map((g, i) => (
                     <div
@@ -246,10 +316,7 @@ export default function ProjectTimeline({
 
               <div
                 className="flex"
-                style={{
-                  borderBottom: "1px solid var(--line-soft)",
-                  height: UNIT_ROW_HEIGHT,
-                }}
+                style={{ borderBottom: "1px solid var(--line-soft)", height: UNIT_ROW_HEIGHT }}
               >
                 {columns.map((c, i) => (
                   <div
@@ -282,47 +349,103 @@ export default function ProjectTimeline({
 
               {/* Rows */}
               {projects.map((p) => {
-                const s = p.fields.startDate
-                  ? new Date(p.fields.startDate)
-                  : null
-                const d = p.fields.duedate ? new Date(p.fields.duedate) : null
-                const st = statusStyle(p.fields.status.name)
+                const isDragging = activeDrag?.key === p.key
+                const rawStart = p.fields.startDate ? new Date(p.fields.startDate) : null
+                const rawEnd = p.fields.duedate ? new Date(p.fields.duedate) : null
+
+                const startDay = isDragging
+                  ? activeDrag!.startDay
+                  : rawStart
+                    ? daysBetween(rangeStart, startOfDay(rawStart))
+                    : null
+                const endDay = isDragging
+                  ? activeDrag!.endDay
+                  : rawEnd
+                    ? daysBetween(rangeStart, startOfDay(rawEnd))
+                    : null
+
+                const hasBar = startDay !== null && endDay !== null
+
                 return (
-                  <button
+                  <div
                     key={p.key}
-                    onClick={() => onSelect(p)}
-                    className="relative block w-full text-left transition-colors hover:bg-[var(--surface-sunk)]"
+                    role="button"
+                    onClick={() => {
+                      if (didDragRef.current) { didDragRef.current = false; return }
+                      onSelect(p)
+                    }}
+                    className="relative block w-full text-left transition-colors hover:bg-[var(--surface-sunk)] group"
                     style={{
                       height: ROW_HEIGHT,
                       borderBottom: "1px solid var(--line-soft)",
+                      cursor: isDragging ? "ew-resize" : "pointer",
                     }}
                   >
-                    {s && d ? (
-                      <span
-                        className="absolute top-3.5 rounded-full flex items-center px-2.5 text-xs font-medium truncate"
+                    {hasBar ? (
+                      <div
+                        className="absolute flex items-center"
                         style={{
-                          left: daysBetween(rangeStart, s) * pxPerDay,
-                          width: Math.max(daysBetween(s, d), 1) * pxPerDay,
-                          minWidth: "18px",
-                          height: "20px",
-                          background: st.bg,
-                          color: st.text,
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          left: startDay! * pxPerDay,
+                          width: Math.max((endDay! - startDay!) * pxPerDay, HANDLE_W * 2 + 4),
+                          height: "26px",
+                          background: "var(--ink)",
+                          borderRadius: "5px",
+                          userSelect: "none",
                         }}
                       >
-                        {p.key}
-                      </span>
+                        {/* Left handle */}
+                        <div
+                          onMouseDown={(e) =>
+                            startDrag(e, p.key, "start", startDay!, endDay!)
+                          }
+                          className="flex-shrink-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          style={{
+                            width: HANDLE_W,
+                            height: "100%",
+                            cursor: "ew-resize",
+                            borderRadius: "5px 0 0 5px",
+                          }}
+                          title="Drag to change start date"
+                        >
+                          <span style={{ width: 2, height: 12, background: "rgba(255,255,255,0.45)", borderRadius: 1, display: "block" }} />
+                        </div>
+
+                        {/* Label */}
+                        <span
+                          className="flex-1 text-xs font-medium truncate text-center px-1"
+                          style={{ color: "#fff", pointerEvents: "none" }}
+                        >
+                          {p.key}
+                        </span>
+
+                        {/* Right handle */}
+                        <div
+                          onMouseDown={(e) =>
+                            startDrag(e, p.key, "end", startDay!, endDay!)
+                          }
+                          className="flex-shrink-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          style={{
+                            width: HANDLE_W,
+                            height: "100%",
+                            cursor: "ew-resize",
+                            borderRadius: "0 5px 5px 0",
+                          }}
+                          title="Drag to change end date"
+                        >
+                          <span style={{ width: 2, height: 12, background: "rgba(255,255,255,0.45)", borderRadius: 1, display: "block" }} />
+                        </div>
+                      </div>
                     ) : (
                       <span
-                        className="absolute top-3.5 text-xs px-2"
-                        style={{
-                          left: Math.max(todayLeft - 80, 0),
-                          color: "var(--ink-ghost)",
-                        }}
+                        className="absolute top-1/2 -translate-y-1/2 text-xs px-2"
+                        style={{ left: Math.max(todayLeft - 80, 0), color: "var(--ink-ghost)" }}
                       >
                         No dates set — tap to add
                       </span>
                     )}
-                  </button>
+                  </div>
                 )
               })}
             </div>
