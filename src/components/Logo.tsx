@@ -1,4 +1,4 @@
-import rrLogo from "../imports/RR.png"
+import rrLogo from "../imports/RR-1.png"
 
 interface Props {
   size?: number
